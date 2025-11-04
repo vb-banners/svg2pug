@@ -72,10 +72,10 @@ color: #d4bfff\
 }\
 .ace-ayu-mirage-custom .ace_constant.ace_language,\
 .ace-ayu-mirage-custom .ace_support.ace_constant {\
-color: #bae67e\
+color: #ffd173\
 }\
 .ace-ayu-mirage-custom .ace_constant.ace_other {\
-color: #d4bfff\
+color: #ffd173\
 }\
 .ace-ayu-mirage-custom .ace_entity.ace_name.ace_tag,\
 .ace-ayu-mirage-custom .ace_meta.ace_tag {\
@@ -110,17 +110,19 @@ color: #f28779\
 .ace-ayu-mirage-custom .ace_heading,\
 .ace-ayu-mirage-custom .ace_markup.ace_heading,\
 .ace-ayu-mirage-custom .ace_string {\
-color: #bae67e\
+color: #ffd173\
 }\
 .ace-ayu-mirage-custom .ace_string.ace_regexp {\
 color: #ffb454\
 }\
 .ace-ayu-mirage-custom .ace_entity.ace_other.ace_attribute-name,\
-.ace-ayu-mirage-custom .ace_support.ace_constant.embed,\
 .ace-ayu-mirage-custom .ace_support.ace_type.ace_attribute,\
 .ace-ayu-mirage-custom .ace_suport.ace_type.ace_attribute,\
-.ace-ayu-mirage-custom .ace_constant.ace_other.ace_attribute,\
 .ace-ayu-mirage-custom .ace_support.ace_other.ace_attribute {\
+color: #ffcc66\
+}\
+.ace-ayu-mirage-custom .ace_support.ace_constant.embed,\
+.ace-ayu-mirage-custom .ace_constant.ace_other.ace_attribute {\
 color: #5ccfe6\
 }\
 .ace-ayu-mirage-custom .ace_entity.ace_other.ace_attribute-name.ace_class,\
