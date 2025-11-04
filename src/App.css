@@ -176,6 +176,20 @@ header .setting select[name="tabSize"] {
   margin-left: 0 !important;
 }
 
+.editor .ace_scroller {
+  scrollbar-width: none;
+}
+
+.editor .ace_scroller::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.editor .ace_scrollbar,
+.editor .ace_scrollbar-track {
+  display: none !important;
+}
+
 footer {
   color: #cbccc6;
   background: #1f2430;

@@ -15,6 +15,8 @@ const PUG_WIDTH_STORAGE_KEY = "html2pug:pugPaneWidth";
 const MIN_PUG_RATIO = 0.1;
 const MAX_PUG_RATIO = 0.9;
 const SPLIT_RESIZE_TOLERANCE = 14;
+const HTML_CODE_STORAGE_KEY = "html2pug:htmlCode";
+const JADE_CODE_STORAGE_KEY = "html2pug:jadeCode";
 
 class App extends Component {
   htmlEditor = null;
@@ -26,6 +28,8 @@ class App extends Component {
   resizeListenersAttached = false;
   cachedSplitRect = null;
   currentSplitRect = null;
+  isSyncingEditorScroll = false;
+  detachScrollSync = null;
 
   state = {
     HTMLCode,
@@ -73,6 +77,18 @@ class App extends Component {
           });
         }
       }
+      const savedHtmlCode = window.localStorage.getItem(HTML_CODE_STORAGE_KEY);
+      const savedJadeCode = window.localStorage.getItem(JADE_CODE_STORAGE_KEY);
+      const restoredState = {};
+      if (typeof savedHtmlCode === "string") {
+        restoredState.HTMLCode = savedHtmlCode;
+      }
+      if (typeof savedJadeCode === "string") {
+        restoredState.JADECode = savedJadeCode;
+      }
+      if (Object.keys(restoredState).length > 0) {
+        this.setState(restoredState);
+      }
     } catch (error) {
       // Storage might be unavailable; ignore and fall back to defaults.
     }
@@ -82,6 +98,10 @@ class App extends Component {
     document.removeEventListener("mousemove", this.handleDocumentMouseMove);
     document.removeEventListener("mouseup", this.handleDocumentMouseUp);
     this.removeResizeListeners();
+    if (this.detachScrollSync) {
+      this.detachScrollSync();
+      this.detachScrollSync = null;
+    }
   }
 
   componentDidUpdate(prevProps, prevState) {
@@ -103,9 +123,186 @@ class App extends Component {
     editor.session.setUseSoftTabs(useSoftTabs);
     editor.renderer.updateFull();
   };
+  persistHTMLCode = value => {
+    try {
+      const storedValue =
+        value === undefined || value === null ? "" : value;
+      window.localStorage.setItem(HTML_CODE_STORAGE_KEY, storedValue);
+    } catch (error) {
+      // Ignore persistence errors.
+    }
+  };
+
+  persistJadeCode = value => {
+    try {
+      const storedValue =
+        value === undefined || value === null ? "" : value;
+      window.localStorage.setItem(JADE_CODE_STORAGE_KEY, storedValue);
+    } catch (error) {
+      // Ignore persistence errors.
+    }
+  };
+  initializeScrollSync = () => {
+    if (this.detachScrollSync) {
+      return;
+    }
+    if (!this.htmlEditor || !this.jadeEditor) {
+      return;
+    }
+
+    const getSession = editor =>
+      editor.getSession ? editor.getSession() : editor.session;
+
+    const htmlSession = getSession(this.htmlEditor);
+    const jadeSession = getSession(this.jadeEditor);
+
+    if (!htmlSession || !jadeSession) {
+      return;
+    }
+
+    const getScrollMetrics = editor => {
+      const session = getSession(editor);
+      const renderer = editor.renderer || {};
+      const layerConfig = renderer.layerConfig || {};
+      const size = renderer.$size || {};
+      const lineHeight = renderer.lineHeight || 16;
+
+      const scrollTop =
+        typeof session.getScrollTop === "function"
+          ? session.getScrollTop()
+          : 0;
+      const scrollLeft =
+        typeof session.getScrollLeft === "function"
+          ? session.getScrollLeft()
+          : 0;
+
+      const estimatedMaxHeight =
+        typeof layerConfig.maxHeight === "number"
+          ? layerConfig.maxHeight
+          : session.getLength() * lineHeight;
+      const viewportHeight =
+        typeof size.scrollerHeight === "number"
+          ? size.scrollerHeight
+          : editor.container
+          ? editor.container.clientHeight
+          : 0;
+      const scrollableHeight = Math.max(
+        estimatedMaxHeight - viewportHeight,
+        0
+      );
+
+      let estimatedMaxWidth = 0;
+      if (typeof layerConfig.maxWidth === "number") {
+        estimatedMaxWidth = layerConfig.maxWidth;
+      } else if (
+        typeof layerConfig.maxLineLength === "number" &&
+        typeof renderer.characterWidth === "number"
+      ) {
+        estimatedMaxWidth =
+          layerConfig.maxLineLength * renderer.characterWidth;
+      }
+
+      const viewportWidth =
+        typeof size.scrollerWidth === "number"
+          ? size.scrollerWidth
+          : editor.container
+          ? editor.container.clientWidth
+          : 0;
+      const scrollableWidth = Math.max(estimatedMaxWidth - viewportWidth, 0);
+
+      return {
+        scrollTop,
+        scrollLeft,
+        scrollableHeight,
+        scrollableWidth
+      };
+    };
+
+    const clamp = (value, min, max) =>
+      Math.min(Math.max(value, min), max);
+
+    const syncScroll = (sourceEditor, targetEditor) => {
+      const sourceSession = getSession(sourceEditor);
+      const targetSession = getSession(targetEditor);
+      if (!sourceSession || !targetSession) {
+        return;
+      }
+
+      const sourceMetrics = getScrollMetrics(sourceEditor);
+      const targetMetrics = getScrollMetrics(targetEditor);
+
+      const verticalRatio =
+        sourceMetrics.scrollableHeight > 0
+          ? clamp(
+              sourceMetrics.scrollTop / sourceMetrics.scrollableHeight,
+              0,
+              1
+            )
+          : 0;
+      const targetScrollTop =
+        targetMetrics.scrollableHeight > 0
+          ? verticalRatio * targetMetrics.scrollableHeight
+          : 0;
+      targetSession.setScrollTop(targetScrollTop);
+
+      const sourceHorizontalRatio =
+        sourceMetrics.scrollableWidth > 0
+          ? clamp(
+              sourceMetrics.scrollLeft / sourceMetrics.scrollableWidth,
+              0,
+              1
+            )
+          : 0;
+      const targetScrollLeft =
+        targetMetrics.scrollableWidth > 0
+          ? targetMetrics.scrollableWidth * sourceHorizontalRatio
+          : sourceMetrics.scrollLeft;
+
+      if (typeof targetSession.setScrollLeft === "function") {
+        targetSession.setScrollLeft(targetScrollLeft);
+      } else if (typeof targetEditor.scrollToX === "function") {
+        targetEditor.scrollToX(targetScrollLeft);
+      }
+    };
+
+    const syncFromHtml = () => {
+      if (this.isSyncingEditorScroll) {
+        return;
+      }
+      this.isSyncingEditorScroll = true;
+      syncScroll(this.htmlEditor, this.jadeEditor);
+      this.isSyncingEditorScroll = false;
+    };
+
+    const syncFromJade = () => {
+      if (this.isSyncingEditorScroll) {
+        return;
+      }
+      this.isSyncingEditorScroll = true;
+      syncScroll(this.jadeEditor, this.htmlEditor);
+      this.isSyncingEditorScroll = false;
+    };
+
+    htmlSession.on("changeScrollTop", syncFromHtml);
+    htmlSession.on("changeScrollLeft", syncFromHtml);
+    jadeSession.on("changeScrollTop", syncFromJade);
+    jadeSession.on("changeScrollLeft", syncFromJade);
+
+    this.detachScrollSync = () => {
+      htmlSession.removeListener("changeScrollTop", syncFromHtml);
+      htmlSession.removeListener("changeScrollLeft", syncFromHtml);
+      jadeSession.removeListener("changeScrollTop", syncFromJade);
+      jadeSession.removeListener("changeScrollLeft", syncFromJade);
+      this.detachScrollSync = null;
+    };
+
+    syncFromHtml();
+  };
 
   onHTMLChage = newCode => {
-    this.setState({ HTMLCode: newCode });
+    this.setState({ HTMLCode: newCode }, () => {
+      this.persistHTMLCode(newCode);
+    });
     this.updateJADE();
   };
 
@@ -119,7 +316,9 @@ class App extends Component {
   };
 
   onJADEChange = newCode => {
-    this.setState({ JADECode: newCode });
+    this.setState({ JADECode: newCode }, () => {
+      this.persistJadeCode(newCode);
+    });
     this.updateHTML();
   };
 
@@ -132,7 +331,9 @@ class App extends Component {
         indent_size: this.state.tabSize,
         indent_with_tabs: !this.state.useSoftTabs
       });
-      this.setState({ HTMLCode: sanitizeHTMLCode });
+      this.setState({ HTMLCode: sanitizeHTMLCode }, () => {
+        this.persistHTMLCode(sanitizeHTMLCode);
+      });
     } catch (error) {}
   }
 
@@ -156,7 +357,9 @@ class App extends Component {
     };
 
     if (HTMLCode === "") {
-      this.setState({ JADECode: "" });
+      this.setState({ JADECode: "" }, () => {
+        this.persistJadeCode("");
+      });
       return;
     }
 
@@ -176,7 +379,9 @@ class App extends Component {
         fill_tab: !this.state.useSoftTabs,
         tab_size: this.state.tabSize
       });
-      this.setState({ JADECode: sanitizeJade });
+      this.setState({ JADECode: sanitizeJade }, () => {
+        this.persistJadeCode(sanitizeJade);
+      });
     });
   };
 
@@ -369,7 +574,8 @@ class App extends Component {
       showInvisibles: true,
       printMargin: false,
       useSoftTabs,
-      tabSize
+      tabSize,
+      scrollPastEnd: 0.5
     };
 
     const controlsStyle = controlsPosition
@@ -464,6 +670,7 @@ class App extends Component {
                 onLoad={editor => {
                   this.htmlEditor = editor;
                   this.syncEditorSession(editor);
+                  this.initializeScrollSync();
                 }}
                 fontSize={18}
                 tabSize={tabSize}
@@ -489,6 +696,7 @@ class App extends Component {
                 onLoad={editor => {
                   this.jadeEditor = editor;
                   this.syncEditorSession(editor);
+                  this.initializeScrollSync();
                 }}
                 fontSize={18}
                 tabSize={tabSize}
