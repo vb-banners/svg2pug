@@ -7,8 +7,16 @@
   <meta name="description" content="HTML2jade help you convert a HTML snippet to a Jade/Pug snippet. Useful for testing out how something would look in Jade vs HTML">
   <meta property="og:title" content="HTML to Jade/Pug Converter">
   <meta property="og:site_name" content="HTML2Jade">
-  <script src="https://pugjs.org/js/pug.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/he/1.1.1/he.min.js"></script>
+  <script>
+    // Shim for process.versions to prevent pug browserify errors
+    if (typeof process === 'undefined') {
+      window.process = { versions: { node: '16.0.0' }, env: {} };
+    } else if (!process.versions) {
+      process.versions = { node: '16.0.0' };
+    }
+  </script>
+  <script src="%PUBLIC_URL%/pug.js"></script>
+  <script src="%PUBLIC_URL%/he.js"></script>
   <script src="%PUBLIC_URL%/html-to-jade.js"></script>
   <!-- <script data-ad-client="ca-pub-3859143084702095" async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script> -->
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
@@ -23,9 +31,6 @@
 </head>
 
 <body>
-  <script>
-    window.pug = require('pug');
-  </script>
   <noscript>
     You need to enable JavaScript to run this app.
   </noscript>
