@@ -7,6 +7,7 @@ body {
   overflow: hidden;
 }
 
+header,
 article {
   color: white;
   background: #1f2430;
@@ -16,9 +17,33 @@ article {
   border-bottom: 1px solid #2a303f;
 }
 
+.app-header {
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header .brand {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.app-header .controls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .row {
   margin-left: 0 !important;
   margin-right: 0 !important;
+}
+
+[class*="col-"] {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 .footer {
@@ -31,9 +56,15 @@ section {
   margin: 0;
   padding: 0;
   flex: 1 1 auto;
-  position: relative;
   display: flex;
   overflow: hidden;
+}
+
+section > .row {
+  flex: 1 1 auto;
+  width: 100%;
+  margin: 0;
+  min-height: 0;
 }
 
 .editor {
@@ -52,21 +83,53 @@ a:hover {
   text-decoration: white;
 }
 
+header .right {
+  font-size: 14px;
+  display: none;
+}
+
+header .logo {
+  font-weight: 700;
+  font-size: 28px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+header .small {
+  font-size: 18px;
+}
+
+header .setting {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+header .setting input {
+  margin: 0 4px 0 12px;
+}
+
+header .setting select[name="tabSize"] {
+  margin-left: 15px;
+  margin-right: 7px;
+}
+
 .img-logo {
   width: 110px;
 }
 
 .editor-html {
+  padding-top: 20px;
   padding-right: 0;
   padding-left: 0;
-  position: relative;
+  height: 100%;
 }
 
 .editor-jade {
+  padding-top: 20px;
   padding-left: 0;
   padding-right: 0;
   height: 100%;
-  position: relative;
 }
 
 #ace-jade {
@@ -80,19 +143,13 @@ a:hover {
     monospace !important;
   width: 100% !important;
   font-variant-ligatures: normal;
-  line-height: 1.5;
-  font-weight: 500;
+  line-height: 1.6;
 }
 
 .ace-ayu-mirage .ace_gutter {
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 12px;
+  padding-right: 12px;
   text-align: right;
-}
-
-.ace-ayu-mirage .ace_gutter-cell {
-  padding-left: 6px !important;
-  padding-right: 6px !important;
 }
 
 .ace-ayu-mirage .ace_scroller {
@@ -104,176 +161,9 @@ footer {
   background: #1f2430;
 }
 
-.floating-controls {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  right: auto;
-  top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 16px 20px;
-  background: rgba(24, 29, 40, 0.95);
-  border: 1px solid #313b53;
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(7, 10, 18, 0.55);
-  z-index: 10;
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  backdrop-filter: blur(12px);
-  color: #e1e7f7;
-  cursor: grab;
-  user-select: none;
-  touch-action: none;
-  transform: translateX(-50%);
-}
-
-.floating-controls.is-dragging {
-  cursor: grabbing;
-}
-
-.floating-controls.has-custom-position {
-  transform: none;
-}
-
-.floating-controls .controls-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.floating-controls .logo {
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 0.04em;
-  color: #f8faff;
-}
-
-.floating-controls .controls {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.floating-controls label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  text-transform: none;
-  color: #d4dcf3;
-}
-
-.floating-controls input[type="radio"] {
-  accent-color: #ffb454;
-  margin: 0;
-}
-
-.editor-split {
-  flex: 1 1 auto;
-  width: 100%;
-  display: flex;
-  position: relative;
-  min-height: 0;
-}
-
-.editor-split.is-resizing {
-  cursor: col-resize;
-}
-
-.editor-split .editor {
-  flex: 1 1 0;
-  min-width: 200px;
-}
-
-.editor-split-handle {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 14px;
-  cursor: col-resize;
-  transform: translateX(-50%);
-  z-index: 4;
-  touch-action: none;
-}
-
-.editor-split-handle::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 42px;
-  background: #313b53;
-  border-radius: 2px;
-  transform: translate(-50%, -50%);
-  transition: background 0.15s ease;
-}
-
-.editor-split-handle:hover::before,
-.editor-split.is-resizing .editor-split-handle::before {
-  background: #4d76ff;
-}
-
-.floating-controls .fork-link {
-  font-size: 11px;
-  color: #9ba7c6;
-  text-decoration: none;
-  transition: color 0.15s ease, opacity 0.15s ease;
-}
-
-.floating-controls .fork-link:hover {
-  color: #c0c9e4;
-  opacity: 0.95;
-}
-
-.tabsize-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #bec9e6;
-}
-
-.tabsize-control select {
-  background: rgba(15, 19, 28, 0.85);
-  border: 1px solid #3a4764;
-  border-radius: 10px;
-  padding: 6px 14px;
-  color: #f2f5ff;
-  font-size: 13px;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
-  line-height: 1.2;
-  min-width: 56px;
-  margin-top: -4px;
-}
-
-.tabsize-control select:focus {
-  outline: none;
-  border-color: #4d76ff;
-  box-shadow: 0 0 0 1px rgba(77, 118, 255, 0.35);
-}
-
-@media (max-width: 991.98px) {
-  .editor-split {
-    flex-direction: column;
-  }
-
-  .editor-split .editor {
-    min-width: 0;
-    flex-basis: auto !important;
-    width: 100%;
-  }
-}
-
 @media (max-width: 575.98px) {
-  .floating-controls {
-    position: static;
-    margin: 16px auto;
-    transform: none;
-    box-shadow: none;
-    gap: 10px;
+  header .logo {
+    font-size: 28px;
   }
 
   .editor {
