@@ -75,7 +75,7 @@ header .setting select[name="tabSize"] {
 
 .ace_editor {
   height: calc(100vh - 250px) !important;
-  font-family: "Monaco", "Menlo", "Ubuntu Mono", "Consolas", "source-code-pro",
+  font-family: "Source Code Pro", "Monaco", "Menlo", "Ubuntu Mono", "Consolas",
     monospace !important;
   width: 100% !important;
 }
