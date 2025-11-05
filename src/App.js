@@ -478,6 +478,7 @@ class App extends Component {
   componentDidMount() {
     document.addEventListener("mousemove", this.handleDocumentMouseMove);
     document.addEventListener("mouseup", this.handleDocumentMouseUp);
+    document.addEventListener("focusin", this.handleDocumentFocusIn, true);
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
       window.addEventListener("resize", this.handleWindowResize);
     }
@@ -532,6 +533,7 @@ class App extends Component {
   componentWillUnmount() {
     document.removeEventListener("mousemove", this.handleDocumentMouseMove);
     document.removeEventListener("mouseup", this.handleDocumentMouseUp);
+    document.removeEventListener("focusin", this.handleDocumentFocusIn, true);
     if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
       window.removeEventListener("resize", this.handleWindowResize);
     }
@@ -605,6 +607,94 @@ class App extends Component {
       // Ignore persistence issues.
     }
   };
+
+  ensureControlReference = element => {
+    if (!element || typeof element !== "object") {
+      return;
+    }
+
+    const target = element;
+    if (target.dataset && target.dataset.html2pugControlPatched === "true") {
+      return;
+    }
+
+    try {
+      const descriptor = Object.getOwnPropertyDescriptor(target, "control");
+      if (!descriptor || descriptor.configurable) {
+        if (typeof target.control === "undefined") {
+          Object.defineProperty(target, "control", {
+            configurable: true,
+            enumerable: false,
+            get() {
+              return target;
+            }
+          });
+        } else if (!target.control) {
+          target.control = target;
+        }
+      } else if (typeof target.control === "undefined") {
+        target.control = target;
+      }
+    } catch (error) {
+      try {
+        target.control = target;
+      } catch (assignError) {
+        // ignore inability to assign custom control reference
+      }
+    }
+
+    if (target.dataset) {
+      target.dataset.html2pugControlPatched = "true";
+    }
+  };
+
+  configureEditorTextInput = editor => {
+    if (!editor || !editor.textInput || typeof editor.textInput.getElement !== "function") {
+      return;
+    }
+    const inputEl = editor.textInput.getElement();
+    if (!inputEl) {
+      return;
+    }
+
+    inputEl.setAttribute("autocomplete", "off");
+    inputEl.setAttribute("autocorrect", "off");
+    inputEl.setAttribute("autocapitalize", "off");
+    inputEl.setAttribute("spellcheck", "false");
+
+    this.ensureControlReference(inputEl);
+  };
+
+  isAceTextInput = element => {
+    if (!element || typeof element !== "object") {
+      return false;
+    }
+    const { classList, tagName } = element;
+    if (tagName && tagName.toLowerCase() === "textarea" && classList && classList.contains("ace_text-input")) {
+      return true;
+    }
+    if (classList && classList.contains("ace_text-input")) {
+      return true;
+    }
+    if (element.getAttribute) {
+      const role = element.getAttribute("role");
+      if (role === "textbox" && classList && classList.contains("ace_text-input")) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  handleDocumentFocusIn = event => {
+    if (!event || !event.target) {
+      return;
+    }
+    this.ensureControlReference(event.target);
+    if (this.isAceTextInput(event.target) && typeof event.stopImmediatePropagation === "function") {
+      event.stopImmediatePropagation();
+    }
+  };
+
   initializeScrollSync = () => {
     if (this.detachScrollSync) {
       return;
@@ -1205,6 +1295,7 @@ class App extends Component {
                   this.htmlEditor = editor;
                   this.syncEditorSession(editor);
                   this.initializeScrollSync();
+                  this.configureEditorTextInput(editor);
                   if (this.htmlColorPreviewDetach) {
                     this.htmlColorPreviewDetach();
                   }
@@ -1235,6 +1326,7 @@ class App extends Component {
                   this.jadeEditor = editor;
                   this.syncEditorSession(editor);
                   this.initializeScrollSync();
+                  this.configureEditorTextInput(editor);
                   if (this.jadeColorPreviewDetach) {
                     this.jadeColorPreviewDetach();
                   }
