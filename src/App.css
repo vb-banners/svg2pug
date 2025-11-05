@@ -201,19 +201,20 @@ footer {
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  flex-direction: column;
-  gap: 20px;
-  padding: 20px 22px;
+  flex-direction: row;
+  gap: 28px;
+  padding: 16px 24px;
   background: rgba(35, 40, 52, 0.95);
   border: 1px solid #2c3750;
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(9, 13, 23, 0.45);
   cursor: grab;
   user-select: none;
-  transition: box-shadow 0.2s ease, transform 0.2s ease, background 0.2s ease;
-  max-width: 320px;
+  transition: box-shadow 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  width: max-content;
   z-index: 5;
   font-family: 'Plus Jakarta Sans', sans-serif;
+  align-items: center;
 }
 
 .floating-controls.is-dragging {
@@ -229,7 +230,10 @@ footer {
 .floating-controls .controls-heading {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  justify-content: center;
+  gap: 4px;
+  align-items: flex-start;
+  text-align: left;
 }
 
 .floating-controls .logo {
@@ -237,12 +241,14 @@ footer {
   font-weight: 700;
   letter-spacing: 0.05em;
   color: #f6f7fb;
+  line-height: 1;
 }
 
 .floating-controls .fork-link {
   font-size: 13px;
   color: #8f9bb8;
   text-decoration: none;
+  line-height: 1;
 }
 
 .floating-controls .fork-link:hover {
@@ -253,38 +259,91 @@ footer {
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 18px;
-  flex-wrap: nowrap;
+  gap: 20px;
 }
 
 .floating-controls label {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   font-size: 14px;
   color: #d9d7ce;
   cursor: pointer;
 }
 
-.floating-controls input[type="radio"] {
-  accent-color: #f6c65b;
+.floating-controls input[type="radio"],
+.floating-controls input[type="checkbox"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #8f9bb8;
+  background: transparent;
+  margin: 5px 0 0 0;
+  position: relative;
   cursor: pointer;
-  margin: 0;
+  flex-shrink: 0;
+}
+
+.floating-controls input[type="radio"]::after,
+.floating-controls input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  transform: translate(-50%, -50%);
+}
+
+.floating-controls input[type="radio"]:checked,
+.floating-controls input[type="checkbox"]:checked {
+  border-color: #f6c65b;
+}
+
+.floating-controls input[type="radio"]:checked::after,
+.floating-controls input[type="checkbox"]:checked::after {
+  background: #f6c65b;
+}
+
+.floating-controls input[type="radio"]:focus-visible,
+.floating-controls input[type="checkbox"]:focus-visible {
+  outline: 2px solid rgba(115, 208, 255, 0.6);
+  outline-offset: 2px;
 }
 
 .floating-controls label span {
-  color: inherit;
+  color: #d9d7ce;
+  font-size: 14px;
+  white-space: nowrap;
+  line-height: 1;
+  display: inline-block;
+  margin-top: 3px;
 }
 
-.floating-controls input[type="radio"]:checked + span {
+.floating-controls input[type="radio"]:checked + span,
+.floating-controls input[type="checkbox"]:checked + span {
   color: #f6c65b;
+}
+
+.floating-controls .id-to-class-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  cursor: pointer;
 }
 
 .floating-controls .tabsize-control {
   display: flex;
   align-items: center;
-  height: 100%;
-  margin-top: -10px;
+  justify-content: center;
+  gap: 12px;
 }
 
 .floating-controls .tabsize-control select {
@@ -294,12 +353,15 @@ footer {
   color: #d9d7ce;
   border: 1px solid #2c3750;
   border-radius: 8px;
-  padding: 4px 10px;
-  font-size: 13px;
+  padding: 4px 14px;
+  font-size: 14px;
   font-family: inherit;
   cursor: pointer;
   display: flex;
   align-items: center;
+  height: 30px;
+  line-height: 1;
+  margin-top: -1px;
 }
 
 .floating-controls .tabsize-control select:focus {

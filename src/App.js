@@ -17,6 +17,7 @@ const MAX_PUG_RATIO = 0.9;
 const SPLIT_RESIZE_TOLERANCE = 14;
 const HTML_CODE_STORAGE_KEY = "html2pug:htmlCode";
 const JADE_CODE_STORAGE_KEY = "html2pug:jadeCode";
+const ID_TO_CLASS_STORAGE_KEY = "html2pug:idToClassToggle";
 
 class App extends Component {
   htmlEditor = null;
@@ -36,6 +37,7 @@ class App extends Component {
     JADECode,
     tabSize: 4,
     useSoftTabs: true,
+    enableSvgIdToClass: false,
     controlsPosition: null,
     isControlsDragging: false,
     pugWidthRatio: 0.5,
@@ -79,12 +81,18 @@ class App extends Component {
       }
       const savedHtmlCode = window.localStorage.getItem(HTML_CODE_STORAGE_KEY);
       const savedJadeCode = window.localStorage.getItem(JADE_CODE_STORAGE_KEY);
+      const savedIdToClass = window.localStorage.getItem(
+        ID_TO_CLASS_STORAGE_KEY
+      );
       const restoredState = {};
       if (typeof savedHtmlCode === "string") {
         restoredState.HTMLCode = savedHtmlCode;
       }
       if (typeof savedJadeCode === "string") {
         restoredState.JADECode = savedJadeCode;
+      }
+      if (savedIdToClass === "true" || savedIdToClass === "false") {
+        restoredState.enableSvgIdToClass = savedIdToClass === "true";
       }
       if (Object.keys(restoredState).length > 0) {
         this.setState(restoredState);
@@ -140,6 +148,16 @@ class App extends Component {
       window.localStorage.setItem(JADE_CODE_STORAGE_KEY, storedValue);
     } catch (error) {
       // Ignore persistence errors.
+    }
+  };
+  persistSvgIdToClassToggle = isEnabled => {
+    try {
+      window.localStorage.setItem(
+        ID_TO_CLASS_STORAGE_KEY,
+        isEnabled ? "true" : "false"
+      );
+    } catch (error) {
+      // Ignore persistence issues.
     }
   };
   initializeScrollSync = () => {
@@ -322,6 +340,17 @@ class App extends Component {
     this.updateHTML();
   };
 
+  onSvgIdToClassToggle = event => {
+    const isEnabled = Boolean(event.target.checked);
+    this.setState(
+      { enableSvgIdToClass: isEnabled },
+      () => {
+        this.persistSvgIdToClassToggle(isEnabled);
+        this.updateJADE();
+      }
+    );
+  };
+
   updateHTML = () => {
     try {
       const HTMLCode = this.pug.render(this.state.JADECode, { pretty: true });
@@ -347,6 +376,31 @@ class App extends Component {
   };
 
   findHTMLOrBodyTag = html => html.search(/<\/html>|<\/body>/) > -1;
+
+  applySvgIdToClassTransform = jade => {
+    if (!this.state.enableSvgIdToClass || typeof jade !== "string") {
+      return jade;
+    }
+    let transformed = jade;
+    const tagReplacements = [
+      { pattern: /\bg#/g, replacement: "g." },
+      { pattern: /\bpath#/g, replacement: "path." },
+      { pattern: /\brect#/g, replacement: "rect." },
+      { pattern: /\bcircle#/g, replacement: "circle." }
+    ];
+    tagReplacements.forEach(({ pattern, replacement }) => {
+      transformed = transformed.replace(pattern, replacement);
+    });
+    transformed = transformed.replace(/\b(x|y)=['"]-?0['"]\s*,\s*/g, "");
+    transformed = transformed.replace(/,\s*\b(x|y)=['"]-?0['"]/g, "");
+    transformed = transformed.replace(/\b(x|y)=['"]-?0['"]\s+/g, "");
+    transformed = transformed.replace(/\b(x|y)=['"]-?0['"](?=\s*\))/g, "");
+    transformed = transformed.replace(/,\s*(?=\))/g, "");
+    transformed = transformed.replace(/\(\s*,/g, "(");
+    transformed = transformed.replace(/[ \t]+\)/g, ")");
+    transformed = transformed.replace(/\(\s*\)/g, "");
+    return transformed;
+  };
 
   updateJADE = () => {
     const { HTMLCode } = this.state;
@@ -379,6 +433,7 @@ class App extends Component {
         fill_tab: !this.state.useSoftTabs,
         tab_size: this.state.tabSize
       });
+      sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
       this.setState({ JADECode: sanitizeJade }, () => {
         this.persistJadeCode(sanitizeJade);
       });
@@ -566,7 +621,7 @@ class App extends Component {
   };
 
   render() {
-    const { tabSize, useSoftTabs, controlsPosition, pugWidthRatio, isControlsDragging, isResizingSplit } = this.state;
+    const { tabSize, useSoftTabs, controlsPosition, pugWidthRatio, isControlsDragging, isResizingSplit, enableSvgIdToClass } = this.state;
     const options = {
       showLineNumbers: true,
       showGutter: true,
@@ -652,6 +707,16 @@ class App extends Component {
                   <option value="6">6</option>
                 </select>
               </div>
+              <label className="id-to-class-control">
+                <input
+                  type="checkbox"
+                  name="idToClass"
+                  checked={enableSvgIdToClass}
+                  onChange={this.onSvgIdToClassToggle}
+                  aria-label="Toggle SVG id to class conversion"
+                />
+                <span>Id to Class</span>
+              </label>
             </div>
           </div>
           <div

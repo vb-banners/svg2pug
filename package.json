@@ -15,7 +15,7 @@
     "react-scripts": "1.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "dev": "react-scripts start",
     "build": "node scripts/build-to-docs.js",
     "react-build": "node scripts/build-to-docs.js",
     "test": "react-scripts test --env=jsdom",

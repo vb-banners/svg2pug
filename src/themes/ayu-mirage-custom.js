@@ -8,6 +8,8 @@ ace.define("ace/theme/ayu-mirage-custom",["require","exports","module","ace/lib/
 
 exports.isDark = true;
 exports.cssClass = "ace-ayu-mirage-custom";
+// Inline CSS mirrors VS Code's Ayu Mirage palette so the Ace HTML/Pug panes match the screenshots.
+// Color legend: #FFD173 keywords/classes, #bae67e numbers, #73D0FF constants, #5ccfe6 tags & embedded, #c2d94c strings, #f28779 regex, #FFD173 attributes.
 exports.cssText = ".ace-ayu-mirage-custom .ace_gutter {\
 background: #1d2330;\
 color: #8f9bb8;\
@@ -24,7 +26,7 @@ border: 1px solid #2c3750;\
 border-radius: 4px\
 }\
 .ace-ayu-mirage-custom .ace_cursor {\
-color: #ffcc66\
+color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_marker-layer .ace_selection {\
 background: #33415e\
@@ -37,7 +39,7 @@ background: rgb(102, 82, 0)\
 }\
 .ace-ayu-mirage-custom .ace_marker-layer .ace_bracket {\
 margin: -1px 0 0 -1px;\
-border: 1px solid #73d0ff\
+border: 1px solid #73D0FF\
 }\
 .ace-ayu-mirage-custom .ace_marker-layer .ace_active-line {\
 background: #232834\
@@ -53,7 +55,7 @@ color: #33415e\
 }\
 .ace-ayu-mirage-custom .ace_keyword,\
 .ace-ayu-mirage-custom .ace_storage {\
-color: #ff8f40\
+color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_keyword.ace_other.ace_doctype.ace_jade {\
 color: #5ccfe6\
@@ -67,15 +69,13 @@ color: #d9d7ce\
 }\
 .ace-ayu-mirage-custom .ace_constant.ace_character,\
 .ace-ayu-mirage-custom .ace_constant.ace_numeric,\
+.ace-ayu-mirage-custom .ace_constant.ace_other,\
 .ace-ayu-mirage-custom .ace_keyword.ace_other.ace_unit {\
-color: #d4bfff\
+color: #bae67e\
 }\
 .ace-ayu-mirage-custom .ace_constant.ace_language,\
 .ace-ayu-mirage-custom .ace_support.ace_constant {\
-color: #ffd173\
-}\
-.ace-ayu-mirage-custom .ace_constant.ace_other {\
-color: #ffd173\
+color: #73d0ff\
 }\
 .ace-ayu-mirage-custom .ace_entity.ace_name.ace_tag,\
 .ace-ayu-mirage-custom .ace_meta.ace_tag {\
@@ -93,7 +93,7 @@ background-color: #f51818\
 }\
 .ace-ayu-mirage-custom .ace_invalid.ace_deprecated {\
 color: #ff3333;\
-background-color: #ffb454\
+background-color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_fold {\
 background-color: #73d0ff;\
@@ -105,21 +105,21 @@ color: #d9d7ce\
 }\
 .ace-ayu-mirage-custom .ace_support.ace_class,\
 .ace-ayu-mirage-custom .ace_support.ace_type {\
-color: #f28779\
+color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_heading,\
 .ace-ayu-mirage-custom .ace_markup.ace_heading,\
 .ace-ayu-mirage-custom .ace_string {\
-color: #ffd173\
+color: #D5FF80\
 }\
 .ace-ayu-mirage-custom .ace_string.ace_regexp {\
-color: #ffb454\
+color: #f28779\
 }\
 .ace-ayu-mirage-custom .ace_entity.ace_other.ace_attribute-name,\
 .ace-ayu-mirage-custom .ace_support.ace_type.ace_attribute,\
 .ace-ayu-mirage-custom .ace_suport.ace_type.ace_attribute,\
 .ace-ayu-mirage-custom .ace_support.ace_other.ace_attribute {\
-color: #ffcc66\
+color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_support.ace_constant.embed,\
 .ace-ayu-mirage-custom .ace_constant.ace_other.ace_attribute {\
@@ -129,7 +129,7 @@ color: #5ccfe6\
 .ace-ayu-mirage-custom .ace_entity.ace_other.ace_attribute-name.ace_id,\
 .ace-ayu-mirage-custom .ace_suport.ace_type.ace_attribute.ace_class,\
 .ace-ayu-mirage-custom .ace_suport.ace_type.ace_attribute.ace_id {\
-color: #ffcc66\
+color: #FFD173\
 }\
 .ace-ayu-mirage-custom .ace_variable.ace_parameter {\
 color: #d9d7ce\
@@ -146,5 +146,6 @@ padding: 0 !important;\
 }";
 
 var dom = acequire("../lib/dom");
+// Inject the theme rules directly into Ace so no external stylesheet is required.
 dom.importCssString(exports.cssText, exports.cssClass);
 });
