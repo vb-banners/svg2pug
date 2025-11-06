@@ -334,7 +334,9 @@ class App extends Component {
     isResizingSplit: false,
     svgoSettings: getDefaultSvgoSettings(),
     isSvgoEnabled: true,
-    isSvgoMenuOpen: false
+    isSvgoMenuOpen: false,
+    openFiles: [],
+    activeFileId: null
   };
 
   constructor() {
@@ -866,7 +868,22 @@ class App extends Component {
     reader.onload = e => {
       const content = e.target?.result;
       if (typeof content === "string") {
-        this.setState({ HTMLCode: content }, () => {
+        const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newFile = {
+          id: fileId,
+          name: file.name,
+          htmlContent: content,
+          jadeContent: ""
+        };
+
+        this.setState(prevState => {
+          const openFiles = [...prevState.openFiles, newFile];
+          return {
+            openFiles,
+            activeFileId: fileId,
+            HTMLCode: content
+          };
+        }, () => {
           this.persistHTMLCode(content);
           this.updateJADE();
         });
@@ -879,6 +896,63 @@ class App extends Component {
 
     // Reset the input so the same file can be selected again
     event.target.value = "";
+  };
+
+  handleTabSwitch = fileId => {
+    const file = this.state.openFiles.find(f => f.id === fileId);
+    if (!file) {
+      return;
+    }
+
+    this.setState({
+      activeFileId: fileId,
+      HTMLCode: file.htmlContent,
+      JADECode: file.jadeContent
+    }, () => {
+      this.persistHTMLCode(file.htmlContent);
+      this.persistJadeCode(file.jadeContent);
+    });
+  };
+
+  handleTabClose = (fileId, event) => {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    this.setState(prevState => {
+      const openFiles = prevState.openFiles.filter(f => f.id !== fileId);
+      let nextActiveId = prevState.activeFileId;
+
+      // If we're closing the active tab, switch to another tab
+      if (fileId === prevState.activeFileId) {
+        if (openFiles.length > 0) {
+          const closedIndex = prevState.openFiles.findIndex(f => f.id === fileId);
+          const nextIndex = Math.min(closedIndex, openFiles.length - 1);
+          nextActiveId = openFiles[nextIndex]?.id || null;
+        } else {
+          nextActiveId = null;
+        }
+      }
+
+      const activeFile = openFiles.find(f => f.id === nextActiveId);
+      const htmlCode = activeFile ? activeFile.htmlContent : HTMLCode;
+      const jadeCode = activeFile ? activeFile.jadeContent : JADECode;
+
+      return {
+        openFiles,
+        activeFileId: nextActiveId,
+        HTMLCode: htmlCode,
+        JADECode: jadeCode
+      };
+    }, () => {
+      if (this.state.activeFileId) {
+        const activeFile = this.state.openFiles.find(f => f.id === this.state.activeFileId);
+        if (activeFile) {
+          this.persistHTMLCode(activeFile.htmlContent);
+          this.persistJadeCode(activeFile.jadeContent);
+        }
+      }
+    });
   };
 
   ensureControlReference = element => {
@@ -1126,7 +1200,18 @@ class App extends Component {
   };
 
   onHTMLChage = newCode => {
-    this.setState({ HTMLCode: newCode }, () => {
+    this.setState(prevState => {
+      const { activeFileId, openFiles } = prevState;
+      if (activeFileId && openFiles.length > 0) {
+        const updatedFiles = openFiles.map(file =>
+          file.id === activeFileId
+            ? { ...file, htmlContent: newCode }
+            : file
+        );
+        return { HTMLCode: newCode, openFiles: updatedFiles };
+      }
+      return { HTMLCode: newCode };
+    }, () => {
       this.persistHTMLCode(newCode);
       this.updateJADE();
     });
@@ -1142,7 +1227,18 @@ class App extends Component {
   };
 
   onJADEChange = newCode => {
-    this.setState({ JADECode: newCode }, () => {
+    this.setState(prevState => {
+      const { activeFileId, openFiles } = prevState;
+      if (activeFileId && openFiles.length > 0) {
+        const updatedFiles = openFiles.map(file =>
+          file.id === activeFileId
+            ? { ...file, jadeContent: newCode }
+            : file
+        );
+        return { JADECode: newCode, openFiles: updatedFiles };
+      }
+      return { JADECode: newCode };
+    }, () => {
       this.persistJadeCode(newCode);
     });
     this.updateHTML();
@@ -1168,7 +1264,18 @@ class App extends Component {
         indent_size: this.state.tabSize,
         indent_with_tabs: !this.state.useSoftTabs
       });
-      this.setState({ HTMLCode: sanitizeHTMLCode }, () => {
+      this.setState(prevState => {
+        const { activeFileId, openFiles } = prevState;
+        if (activeFileId && openFiles.length > 0) {
+          const updatedFiles = openFiles.map(file =>
+            file.id === activeFileId
+              ? { ...file, htmlContent: sanitizeHTMLCode }
+              : file
+          );
+          return { HTMLCode: sanitizeHTMLCode, openFiles: updatedFiles };
+        }
+        return { HTMLCode: sanitizeHTMLCode };
+      }, () => {
         this.persistHTMLCode(sanitizeHTMLCode);
       });
     } catch (error) {}
@@ -1247,7 +1354,18 @@ class App extends Component {
         tab_size: this.state.tabSize
       });
       sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
-      this.setState({ JADECode: sanitizeJade }, () => {
+      this.setState(prevState => {
+        const { activeFileId, openFiles } = prevState;
+        if (activeFileId && openFiles.length > 0) {
+          const updatedFiles = openFiles.map(file =>
+            file.id === activeFileId
+              ? { ...file, jadeContent: sanitizeJade }
+              : file
+          );
+          return { JADECode: sanitizeJade, openFiles: updatedFiles };
+        }
+        return { JADECode: sanitizeJade };
+      }, () => {
         this.persistJadeCode(sanitizeJade);
       });
     });
@@ -1753,6 +1871,41 @@ class App extends Component {
               </div>
             </div>
           </div>
+          {this.state.openFiles.length > 0 && (
+            <div className="tab-bar">
+              {this.state.openFiles.map(file => (
+                <div
+                  key={file.id}
+                  className={`tab${file.id === this.state.activeFileId ? " active" : ""}`}
+                  onClick={() => this.handleTabSwitch(file.id)}
+                >
+                  <span className="tab__name">{file.name}</span>
+                  <button
+                    type="button"
+                    className="tab__close"
+                    onClick={event => this.handleTabClose(file.id, event)}
+                    aria-label={`Close ${file.name}`}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M18 6L6 18M6 6l12 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
           <div
             className={`editor-split${isResizingSplit ? " is-resizing" : ""}`}
             ref={this.splitRef}

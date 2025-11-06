@@ -738,6 +738,120 @@ footer {
   align-items: center;
 }
 
+.tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: #1a1f2e;
+  border-bottom: 1px solid #2c3750;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: #3f495c #1a1f2e;
+}
+
+.tab-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.tab-bar::-webkit-scrollbar-track {
+  background: #1a1f2e;
+}
+
+.tab-bar::-webkit-scrollbar-thumb {
+  background: #3f495c;
+  border-radius: 2px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: transparent;
+  border-right: 1px solid #2c3750;
+  color: #8f9bb8;
+  font-size: 13px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+  position: relative;
+  min-width: 120px;
+  max-width: 240px;
+}
+
+.tab:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: #cbccc6;
+}
+
+.tab.active {
+  background: #1f2430;
+  color: #f6f7fb;
+  border-bottom: 2px solid #ffd173;
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #ffd173;
+}
+
+.tab__name {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.tab__close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #8f9bb8;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  opacity: 0;
+}
+
+.tab:hover .tab__close {
+  opacity: 1;
+}
+
+.tab.active .tab__close {
+  opacity: 1;
+}
+
+.tab__close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f6f7fb;
+}
+
+.tab__close:focus-visible {
+  outline: 2px solid rgba(115, 208, 255, 0.6);
+  outline-offset: 2px;
+}
+
+.tab__close svg {
+  display: block;
+}
+
 .editor-split {
   flex: 1 1 auto;
   display: flex;
