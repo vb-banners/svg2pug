@@ -13,7 +13,7 @@
     "react-ace": "^6.1.4",
     "react-dom": "^16.4.2",
     "react-scripts": "1.1.4",
-    "svgo": "^2.8.0"
+    "svgo": "^4.0.0"
   },
   "scripts": {
     "dev": "react-scripts start",

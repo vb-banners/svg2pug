@@ -27,6 +27,8 @@ const JADE_CODE_STORAGE_KEY = "html2pug:jadeCode";
 const ID_TO_CLASS_STORAGE_KEY = "html2pug:idToClassToggle";
 const SVGO_SETTINGS_STORAGE_KEY = "html2pug:svgoSettings";
 const SVGO_ENABLED_STORAGE_KEY = "html2pug:svgoEnabled";
+const OPEN_FILES_STORAGE_KEY = "html2pug:openFiles";
+const ACTIVE_FILE_STORAGE_KEY = "html2pug:activeFileId";
 
 const HEX_COLOR_MARKER_KEY = "__hexColorPreviewMarker";
 const HEX_COLOR_REGEX_SOURCE = "#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})(?![0-9a-fA-F])";
@@ -493,7 +495,6 @@ class App extends Component {
   componentDidMount() {
     document.addEventListener("mousemove", this.handleDocumentMouseMove);
     document.addEventListener("mouseup", this.handleDocumentMouseUp);
-    document.addEventListener("focusin", this.handleDocumentFocusIn, true);
     document.addEventListener("pointerdown", this.handleDocumentPointerDown);
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
       window.addEventListener("resize", this.handleWindowResize);
@@ -540,6 +541,30 @@ class App extends Component {
       if (savedSvgoEnabled === "true" || savedSvgoEnabled === "false") {
         restoredState.isSvgoEnabled = savedSvgoEnabled === "true";
       }
+      const savedOpenFiles = window.localStorage.getItem(OPEN_FILES_STORAGE_KEY);
+      const savedActiveFileId = window.localStorage.getItem(ACTIVE_FILE_STORAGE_KEY);
+      if (savedOpenFiles) {
+        try {
+          const parsedFiles = JSON.parse(savedOpenFiles);
+          if (Array.isArray(parsedFiles) && parsedFiles.length > 0) {
+            restoredState.openFiles = parsedFiles;
+            if (savedActiveFileId && parsedFiles.some(f => f.id === savedActiveFileId)) {
+              restoredState.activeFileId = savedActiveFileId;
+              const activeFile = parsedFiles.find(f => f.id === savedActiveFileId);
+              if (activeFile) {
+                restoredState.HTMLCode = activeFile.htmlContent;
+                restoredState.JADECode = activeFile.jadeContent;
+              }
+            } else if (parsedFiles.length > 0) {
+              restoredState.activeFileId = parsedFiles[0].id;
+              restoredState.HTMLCode = parsedFiles[0].htmlContent;
+              restoredState.JADECode = parsedFiles[0].jadeContent;
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
       if (Object.keys(restoredState).length > 0) {
         this.setState(restoredState);
       }
@@ -552,7 +577,6 @@ class App extends Component {
   componentWillUnmount() {
     document.removeEventListener("mousemove", this.handleDocumentMouseMove);
     document.removeEventListener("mouseup", this.handleDocumentMouseUp);
-    document.removeEventListener("focusin", this.handleDocumentFocusIn, true);
     if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
       window.removeEventListener("resize", this.handleWindowResize);
     }
@@ -645,6 +669,28 @@ class App extends Component {
       window.localStorage.setItem(
         SVGO_ENABLED_STORAGE_KEY,
         isEnabled ? "true" : "false"
+      );
+    } catch (error) {
+      // Ignore persistence issues.
+    }
+  };
+
+  persistOpenFiles = () => {
+    try {
+      window.localStorage.setItem(
+        OPEN_FILES_STORAGE_KEY,
+        JSON.stringify(this.state.openFiles)
+      );
+    } catch (error) {
+      // Ignore persistence issues.
+    }
+  };
+
+  persistActiveFileId = () => {
+    try {
+      window.localStorage.setItem(
+        ACTIVE_FILE_STORAGE_KEY,
+        this.state.activeFileId || ""
       );
     } catch (error) {
       // Ignore persistence issues.
@@ -772,31 +818,32 @@ class App extends Component {
 
     for (const option of SVGO_PLUGIN_OPTIONS) {
       const enabled = Boolean(settings.plugins[option.id]);
-      if (!enabled) {
-        plugins.push({ name: option.id, active: false });
-        continue;
+
+      if (enabled) {
+        const plugin = {
+          name: option.id
+        };
+
+        const params = {};
+
+        // Only add precision params to plugins that use them
+        if (option.id === 'cleanupNumericValues' && Number.isFinite(floatPrecision)) {
+          params.floatPrecision = floatPrecision === 0 ? 1 : floatPrecision;
+        }
+
+        if ((option.id === 'convertPathData' || option.id === 'convertTransform') && Number.isFinite(transformPrecision)) {
+          params.transformPrecision = transformPrecision;
+        }
+
+        if (Object.keys(params).length > 0) {
+          plugin.params = params;
+        }
+
+        plugins.push(plugin);
       }
-
-      const plugin = {
-        name: option.id,
-        params: {}
-      };
-
-      if (Number.isFinite(floatPrecision)) {
-        plugin.params.floatPrecision =
-          plugin.name === "cleanupNumericValues" && floatPrecision === 0
-            ? 1
-            : floatPrecision;
-      }
-
-      if (Number.isFinite(transformPrecision)) {
-        plugin.params.transformPrecision = transformPrecision;
-      }
-
-      plugins.push(plugin);
     }
 
-    return {
+    const config = {
       multipass: Boolean(settings.multipass),
       plugins,
       js2svg: {
@@ -804,6 +851,8 @@ class App extends Component {
         indent: 2
       }
     };
+    
+    return config;
   };
 
   applySvgoOptimizations = (source, settings) => {
@@ -834,8 +883,8 @@ class App extends Component {
           fragment = result.data;
         }
       } catch (error) {
-        // Optimization failed; keep original HTML to avoid disrupting the workflow.
-        return html;
+        // Keep the original fragment for this SVG and continue
+        console.warn('SVGO optimization failed for fragment:', error.message);
       }
       optimized += fragment;
       lastIndex = match.index + match[0].length;
@@ -859,14 +908,14 @@ class App extends Component {
   };
 
   handleFileOpen = event => {
-    const file = event.target.files?.[0];
+    const file = event.target.files && event.target.files[0];
     if (!file) {
       return;
     }
 
     const reader = new FileReader();
     reader.onload = e => {
-      const content = e.target?.result;
+      const content = e.target && e.target.result;
       if (typeof content === "string") {
         const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
         const newFile = {
@@ -885,6 +934,8 @@ class App extends Component {
           };
         }, () => {
           this.persistHTMLCode(content);
+          this.persistOpenFiles();
+          this.persistActiveFileId();
           this.updateJADE();
         });
       }
@@ -911,6 +962,7 @@ class App extends Component {
     }, () => {
       this.persistHTMLCode(file.htmlContent);
       this.persistJadeCode(file.jadeContent);
+      this.persistActiveFileId();
     });
   };
 
@@ -928,7 +980,7 @@ class App extends Component {
         if (openFiles.length > 0) {
           const closedIndex = prevState.openFiles.findIndex(f => f.id === fileId);
           const nextIndex = Math.min(closedIndex, openFiles.length - 1);
-          nextActiveId = openFiles[nextIndex]?.id || null;
+          nextActiveId = (openFiles[nextIndex] && openFiles[nextIndex].id) || null;
         } else {
           nextActiveId = null;
         }
@@ -945,101 +997,42 @@ class App extends Component {
         JADECode: jadeCode
       };
     }, () => {
+      this.persistOpenFiles();
+      this.persistActiveFileId();
       if (this.state.activeFileId) {
         const activeFile = this.state.openFiles.find(f => f.id === this.state.activeFileId);
         if (activeFile) {
           this.persistHTMLCode(activeFile.htmlContent);
           this.persistJadeCode(activeFile.jadeContent);
         }
+      } else {
+        this.persistHTMLCode(HTMLCode);
+        this.persistJadeCode(JADECode);
       }
     });
   };
 
-  ensureControlReference = element => {
-    if (!element || typeof element !== "object") {
-      return;
+  formatTabLabel = name => {
+    if (!name || typeof name !== "string") {
+      return "";
     }
 
-    const target = element;
-    if (target.dataset && target.dataset.html2pugControlPatched === "true") {
-      return;
+    const MAX_LENGTH = 34;
+    const ELLIPSIS = "...";
+    if (name.length <= MAX_LENGTH) {
+      return name;
     }
 
-    try {
-      const descriptor = Object.getOwnPropertyDescriptor(target, "control");
-      if (!descriptor || descriptor.configurable) {
-        if (typeof target.control === "undefined") {
-          Object.defineProperty(target, "control", {
-            configurable: true,
-            enumerable: false,
-            get() {
-              return target;
-            }
-          });
-        } else if (!target.control) {
-          target.control = target;
-        }
-      } else if (typeof target.control === "undefined") {
-        target.control = target;
-      }
-    } catch (error) {
-      try {
-        target.control = target;
-      } catch (assignError) {
-        // ignore inability to assign custom control reference
-      }
-    }
+    const extensionMatch = name.match(/(\.[^./\\]+)$/);
+    const extension = extensionMatch ? extensionMatch[1] : "";
+    const maxTailLength = MAX_LENGTH - ELLIPSIS.length;
+    const tailBaseLength = Math.max(extension.length + 4, 8);
+    const tailLength = Math.min(Math.max(tailBaseLength, extension.length), maxTailLength);
+    const tail = name.slice(-tailLength);
+    const availableForStart = Math.max(maxTailLength - tail.length, 1);
+    const start = name.slice(0, availableForStart);
 
-    if (target.dataset) {
-      target.dataset.html2pugControlPatched = "true";
-    }
-  };
-
-  configureEditorTextInput = editor => {
-    if (!editor || !editor.textInput || typeof editor.textInput.getElement !== "function") {
-      return;
-    }
-    const inputEl = editor.textInput.getElement();
-    if (!inputEl) {
-      return;
-    }
-
-    inputEl.setAttribute("autocomplete", "off");
-    inputEl.setAttribute("autocorrect", "off");
-    inputEl.setAttribute("autocapitalize", "off");
-    inputEl.setAttribute("spellcheck", "false");
-
-    this.ensureControlReference(inputEl);
-  };
-
-  isAceTextInput = element => {
-    if (!element || typeof element !== "object") {
-      return false;
-    }
-    const { classList, tagName } = element;
-    if (tagName && tagName.toLowerCase() === "textarea" && classList && classList.contains("ace_text-input")) {
-      return true;
-    }
-    if (classList && classList.contains("ace_text-input")) {
-      return true;
-    }
-    if (element.getAttribute) {
-      const role = element.getAttribute("role");
-      if (role === "textbox" && classList && classList.contains("ace_text-input")) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  handleDocumentFocusIn = event => {
-    if (!event || !event.target) {
-      return;
-    }
-    this.ensureControlReference(event.target);
-    if (this.isAceTextInput(event.target) && typeof event.stopImmediatePropagation === "function") {
-      event.stopImmediatePropagation();
-    }
+    return `${start}${ELLIPSIS}${tail}`;
   };
 
   initializeScrollSync = () => {
@@ -1213,6 +1206,9 @@ class App extends Component {
       return { HTMLCode: newCode };
     }, () => {
       this.persistHTMLCode(newCode);
+      if (this.state.activeFileId && this.state.openFiles.length > 0) {
+        this.persistOpenFiles();
+      }
       this.updateJADE();
     });
   };
@@ -1240,6 +1236,9 @@ class App extends Component {
       return { JADECode: newCode };
     }, () => {
       this.persistJadeCode(newCode);
+      if (this.state.activeFileId && this.state.openFiles.length > 0) {
+        this.persistOpenFiles();
+      }
     });
     this.updateHTML();
   };
@@ -1367,6 +1366,9 @@ class App extends Component {
         return { JADECode: sanitizeJade };
       }, () => {
         this.persistJadeCode(sanitizeJade);
+        if (this.state.activeFileId && this.state.openFiles.length > 0) {
+          this.persistOpenFiles();
+        }
       });
     });
   };
@@ -1674,52 +1676,32 @@ class App extends Component {
           >
             <div className="controls-heading">
               <span className="logo">HTML to PUG</span>
-              <a
-                className="fork-link"
-                href="https://github.com/dvamvo/html2pug"
-                target="_blank"
-                rel="noopener noreferrer"
-                onMouseDown={event => event.stopPropagation()}
-              >
-                Fork of dvamvo/html2pug
-              </a>
             </div>
             <div className="setting controls">
-              <label className="open-file-control">
+              <div className="open-file-control">
                 <input
                   type="file"
                   accept=".svg,image/svg+xml,.html,.htm,text/html"
                   onChange={this.handleFileOpen}
                   className="open-file-input"
+                  id="open-file-input"
                   onMouseDown={event => event.stopPropagation()}
                 />
-                <span className="open-file-button">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M13 2H6C5.46957 2 4.96086 2.21071 4.58579 2.58579C4.21071 2.96086 4 3.46957 4 4V20C4 20.5304 4.21071 21.0391 4.58579 21.4142C4.96086 21.7893 5.46957 22 6 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V9L13 2Z"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M13 2V9H20"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  Open
-                </span>
-              </label>
+                <label htmlFor="open-file-input" className="open-file-button">
+                  <span className="open-file-button__icon" aria-hidden="true">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.84V19h2v-4.16l1.59 1.59L16 15.01 12.01 11z"/>
+                    </svg>
+                  </span>
+                  <span className="open-file-button__text">Open</span>
+                </label>
+              </div>
               <label>
                 <input
                   type="radio"
@@ -1792,16 +1774,7 @@ class App extends Component {
                       xmlns="http://www.w3.org/2000/svg"
                       fill="currentColor"
                     >
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M11.078 1.191a1 1 0 0 0-1.156 0l-1.25.886a1 1 0 0 1-.516.155H6.437a1 1 0 0 0-.95.69l-.39 1.214a1 1 0 0 1-.25.407l-1 .98a1 1 0 0 0 .002 1.446l1 .981a1 1 0 0 1 .25.407l.39 1.213a1 1 0 0 0 .95.691h1.719a1 1 0 0 1 .516.155l1.25.885a1 1 0 0 0 1.156 0l1.25-.885a1 1 0 0 1 .516-.155h1.719a1 1 0 0 0 .95-.69l.39-1.214a1 1 0 0 1 .25-.407l1-.98a1 1 0 0 0-.002-1.445l-1-.982a1 1 0 0 1-.25-.407l-.39-1.213a1 1 0 0 0-.95-.691h-1.719a1 1 0 0 1-.516-.155l-1.25-.885z"
-                      />
-                      <path
-                        fillRule="evenodd"
-                        clipRule="evenodd"
-                        d="M12 8.5a3.5 3.5 0 1 0-7 0 3.5 3.5 0 0 0 7 0z"
-                      />
+                      <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
                     </svg>
                   </span>
                   <span className="svgo-settings-button__text">SVGO Settings</span>
@@ -1842,9 +1815,79 @@ class App extends Component {
                           </div>
                         </section>
                         <section className="svgo-popup__group">
-                          <div className="svgo-popup__group-heading">Features</div>
+                          <div className="svgo-popup__group-heading">Cleanup</div>
                           <div className="svgo-popup__features">
-                            {SVGO_PLUGIN_OPTIONS.map(option =>
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'cleanup').map(option =>
+                              renderToggle(
+                                option.name,
+                                option.id,
+                                Boolean(activeSvgoSettings.plugins[option.id]),
+                                this.handleSvgoPluginToggle,
+                                "compact"
+                              )
+                            )}
+                          </div>
+                        </section>
+                        <section className="svgo-popup__group">
+                          <div className="svgo-popup__group-heading">Styles & Attributes</div>
+                          <div className="svgo-popup__features">
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'style').map(option =>
+                              renderToggle(
+                                option.name,
+                                option.id,
+                                Boolean(activeSvgoSettings.plugins[option.id]),
+                                this.handleSvgoPluginToggle,
+                                "compact"
+                              )
+                            )}
+                          </div>
+                        </section>
+                        <section className="svgo-popup__group">
+                          <div className="svgo-popup__group-heading">Structure</div>
+                          <div className="svgo-popup__features">
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'structure').map(option =>
+                              renderToggle(
+                                option.name,
+                                option.id,
+                                Boolean(activeSvgoSettings.plugins[option.id]),
+                                this.handleSvgoPluginToggle,
+                                "compact"
+                              )
+                            )}
+                          </div>
+                        </section>
+                        <section className="svgo-popup__group">
+                          <div className="svgo-popup__group-heading">Paths & Shapes</div>
+                          <div className="svgo-popup__features">
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'paths').map(option =>
+                              renderToggle(
+                                option.name,
+                                option.id,
+                                Boolean(activeSvgoSettings.plugins[option.id]),
+                                this.handleSvgoPluginToggle,
+                                "compact"
+                              )
+                            )}
+                          </div>
+                        </section>
+                        <section className="svgo-popup__group">
+                          <div className="svgo-popup__group-heading">Numbers & Transforms</div>
+                          <div className="svgo-popup__features">
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'numbers').map(option =>
+                              renderToggle(
+                                option.name,
+                                option.id,
+                                Boolean(activeSvgoSettings.plugins[option.id]),
+                                this.handleSvgoPluginToggle,
+                                "compact"
+                              )
+                            )}
+                          </div>
+                        </section>
+                        <section className="svgo-popup__group">
+                          <div className="svgo-popup__group-heading">SVG Attributes</div>
+                          <div className="svgo-popup__features">
+                            {SVGO_PLUGIN_OPTIONS.filter(opt => opt.category === 'attributes').map(option =>
                               renderToggle(
                                 option.name,
                                 option.id,
@@ -1879,7 +1922,9 @@ class App extends Component {
                   className={`tab${file.id === this.state.activeFileId ? " active" : ""}`}
                   onClick={() => this.handleTabSwitch(file.id)}
                 >
-                  <span className="tab__name">{file.name}</span>
+                  <span className="tab__name" title={file.name}>
+                    {this.formatTabLabel(file.name)}
+                  </span>
                   <button
                     type="button"
                     className="tab__close"
@@ -1923,7 +1968,6 @@ class App extends Component {
                   this.htmlEditor = editor;
                   this.syncEditorSession(editor);
                   this.initializeScrollSync();
-                  this.configureEditorTextInput(editor);
                   if (this.htmlColorPreviewDetach) {
                     this.htmlColorPreviewDetach();
                   }
@@ -1954,7 +1998,6 @@ class App extends Component {
                   this.jadeEditor = editor;
                   this.syncEditorSession(editor);
                   this.initializeScrollSync();
-                  this.configureEditorTextInput(editor);
                   if (this.jadeColorPreviewDetach) {
                     this.jadeColorPreviewDetach();
                   }

@@ -7,6 +7,10 @@
   <meta name="description" content="HTML2PUG help you convert a HTML snippet to a PUG snippet. Useful for testing out how something would look in PUG vs HTML">
   <meta property="og:title" content="HTML to PUG Converter">
   <meta property="og:site_name" content="HTML2PUG">
+  <!-- Signal to password managers: no login forms here -->
+  <meta name="1password-ignore" content="true">
+  <meta name="bitwarden-ignore" content="true">
+  <meta name="lastpass-ignore" content="true">
   <script>
     // Shim for process.versions to prevent pug browserify errors
     if (typeof process === 'undefined') {
@@ -15,6 +19,7 @@
       process.versions = { node: '16.0.0' };
     }
   </script>
+
   <script src="%PUBLIC_URL%/pug.js"></script>
   <script src="%PUBLIC_URL%/he.js"></script>
   <script src="%PUBLIC_URL%/html-to-jade.js"></script>
@@ -25,6 +30,20 @@
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials">
   <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg">
   <meta name="theme-color" content="#1F242E">
+  <script>
+    // Filter out browser extension errors from console
+    (function() {
+      const originalError = console.error;
+      console.error = function(...args) {
+        const msg = args.join(' ');
+        if (msg.includes('content_script') || 
+            (msg.includes('Cannot read') && msg.includes('control'))) {
+          return; // Silently ignore extension errors
+        }
+        originalError.apply(console, args);
+      };
+    })();
+  </script>
   <title>HTML to PUG Online Realtime Converter</title>
 </head>
 
