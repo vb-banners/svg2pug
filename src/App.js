@@ -314,6 +314,7 @@ class App extends Component {
   sectionRef = React.createRef();
   splitRef = React.createRef();
   svgoControlsRef = React.createRef();
+  helpControlsRef = React.createRef();
   dragOffset = { x: 0, y: 0 };
   resizeListenersAttached = false;
   cachedSplitRect = null;
@@ -337,8 +338,11 @@ class App extends Component {
     svgoSettings: getDefaultSvgoSettings(),
     isSvgoEnabled: true,
     isSvgoMenuOpen: false,
+    isHelpMenuOpen: false,
     openFiles: [],
-    activeFileId: null
+    activeFileId: null,
+    draggedTabId: null,
+    dragOverTabId: null
   };
 
   constructor() {
@@ -492,10 +496,78 @@ class App extends Component {
     this.scheduleControlsReflow();
   };
 
+  handlePaste = async (event) => {
+    // Check if clipboard contains files
+    const items = event.clipboardData && event.clipboardData.items;
+    if (!items) return;
+
+    const files = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          // Check if it's an HTML or SVG file
+          const fileName = file.name || 'pasted-file';
+          const fileType = file.type;
+          
+          if (fileType === 'image/svg+xml' || 
+              fileType === 'text/html' || 
+              fileName.endsWith('.svg') || 
+              fileName.endsWith('.html') || 
+              fileName.endsWith('.htm')) {
+            files.push(file);
+          }
+        }
+      }
+    }
+
+    // If we found files, prevent default paste and handle them
+    if (files.length > 0) {
+      event.preventDefault();
+      
+      // Process files similar to handleFileOpen
+      const filePromises = files.map((file, index) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const content = e.target.result;
+            const fileId = Date.now() + index;
+            const fileName = file.name || ('pasted-' + fileId + '.' + (file.type === 'image/svg+xml' ? 'svg' : 'html'));
+            
+            resolve({
+              id: fileId,
+              name: fileName,
+              htmlContent: content,
+              jadeContent: this.convertHtmlToJade(content)
+            });
+          };
+          reader.readAsText(file);
+        });
+      });
+
+      const newFiles = await Promise.all(filePromises);
+      
+      this.setState(prevState => ({
+        openFiles: [...prevState.openFiles, ...newFiles],
+        activeFileId: newFiles[0].id,
+        HTMLCode: newFiles[0].htmlContent,
+        JADECode: newFiles[0].jadeContent
+      }), () => {
+        this.persistOpenFiles();
+        this.persistActiveFileId();
+        this.persistHTMLCode(newFiles[0].htmlContent);
+        this.persistJadeCode(newFiles[0].jadeContent);
+      });
+    }
+  };
+
   componentDidMount() {
     document.addEventListener("mousemove", this.handleDocumentMouseMove);
     document.addEventListener("mouseup", this.handleDocumentMouseUp);
     document.addEventListener("pointerdown", this.handleDocumentPointerDown);
+    document.addEventListener("keydown", this.handleKeyDown);
+    document.addEventListener("paste", this.handlePaste);
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
       window.addEventListener("resize", this.handleWindowResize);
     }
@@ -577,6 +649,8 @@ class App extends Component {
   componentWillUnmount() {
     document.removeEventListener("mousemove", this.handleDocumentMouseMove);
     document.removeEventListener("mouseup", this.handleDocumentMouseUp);
+    document.removeEventListener("keydown", this.handleKeyDown);
+    document.removeEventListener("paste", this.handlePaste);
     if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
       window.removeEventListener("resize", this.handleWindowResize);
     }
@@ -705,7 +779,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoEnabled(nextEnabled);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -727,7 +801,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -757,7 +831,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -785,7 +859,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -800,15 +874,31 @@ class App extends Component {
     this.setState({ isSvgoMenuOpen: false });
   };
 
+  toggleHelpMenu = () => {
+    this.setState(prevState => ({
+      isHelpMenuOpen: !prevState.isHelpMenuOpen
+    }));
+  };
+
+  closeHelpMenu = () => {
+    this.setState({ isHelpMenuOpen: false });
+  };
+
   handleDocumentPointerDown = event => {
-    if (!this.state.isSvgoMenuOpen) {
-      return;
+    if (this.state.isSvgoMenuOpen) {
+      const controls = this.svgoControlsRef.current;
+      if (controls && controls.contains(event.target)) {
+        return;
+      }
+      this.closeSvgoMenu();
     }
-    const controls = this.svgoControlsRef.current;
-    if (controls && controls.contains(event.target)) {
-      return;
+    if (this.state.isHelpMenuOpen) {
+      const helpControls = this.helpControlsRef.current;
+      if (helpControls && helpControls.contains(event.target)) {
+        return;
+      }
+      this.closeHelpMenu();
     }
-    this.closeSvgoMenu();
   };
 
   buildSvgoConfig = settings => {
@@ -902,48 +992,66 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings(defaults);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
 
   handleFileOpen = event => {
-    const file = event.target.files && event.target.files[0];
-    if (!file) {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = e => {
-      const content = e.target && e.target.result;
-      if (typeof content === "string") {
-        const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newFile = {
-          id: fileId,
-          name: file.name,
-          htmlContent: content,
-          jadeContent: ""
-        };
+    let filesProcessed = 0;
+    const totalFiles = files.length;
+    const newFiles = [];
 
-        this.setState(prevState => {
-          const openFiles = [...prevState.openFiles, newFile];
-          return {
-            openFiles,
-            activeFileId: fileId,
-            HTMLCode: content
-          };
-        }, () => {
-          this.persistHTMLCode(content);
-          this.persistOpenFiles();
-          this.persistActiveFileId();
-          this.updateJADE();
-        });
-      }
-    };
-    reader.onerror = () => {
-      console.error("Failed to read file");
-    };
-    reader.readAsText(file);
+    Array.from(files).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const content = e.target && e.target.result;
+        if (typeof content === "string") {
+          const fileId = `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Convert HTML to Pug for this file
+          const jadeContent = this.convertHtmlToJade(content);
+          
+          newFiles.push({
+            id: fileId,
+            name: file.name,
+            htmlContent: content,
+            jadeContent: jadeContent
+          });
+
+          filesProcessed++;
+          if (filesProcessed === totalFiles) {
+            // All files have been read, update state
+            this.setState(prevState => {
+              const openFiles = [...prevState.openFiles, ...newFiles];
+              // Set the first newly added file as active
+              const activeFileId = newFiles[0].id;
+              return {
+                openFiles,
+                activeFileId,
+                HTMLCode: newFiles[0].htmlContent,
+                JADECode: newFiles[0].jadeContent
+              };
+            }, () => {
+              this.persistHTMLCode(newFiles[0].htmlContent);
+              this.persistJadeCode(newFiles[0].jadeContent);
+              this.persistOpenFiles();
+              this.persistActiveFileId();
+            });
+          }
+        }
+      };
+      reader.onerror = () => {
+        console.error(`Failed to read file: ${file.name}`);
+        filesProcessed++;
+      };
+      reader.readAsText(file);
+    });
 
     // Reset the input so the same file can be selected again
     event.target.value = "";
@@ -964,6 +1072,63 @@ class App extends Component {
       this.persistJadeCode(file.jadeContent);
       this.persistActiveFileId();
     });
+  };
+
+  handleTabDragStart = (fileId, event) => {
+    this.setState({ draggedTabId: fileId });
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', fileId);
+  };
+
+  handleTabDragOver = (fileId, event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    
+    if (this.state.dragOverTabId !== fileId) {
+      this.setState({ dragOverTabId: fileId });
+    }
+  };
+
+  handleTabDragLeave = () => {
+    this.setState({ dragOverTabId: null });
+  };
+
+  handleTabDrop = (targetFileId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const { draggedTabId } = this.state;
+    
+    if (!draggedTabId || draggedTabId === targetFileId) {
+      this.setState({ draggedTabId: null, dragOverTabId: null });
+      return;
+    }
+
+    this.setState(prevState => {
+      const openFiles = [...prevState.openFiles];
+      const draggedIndex = openFiles.findIndex(f => f.id === draggedTabId);
+      const targetIndex = openFiles.findIndex(f => f.id === targetFileId);
+      
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return { draggedTabId: null, dragOverTabId: null };
+      }
+
+      // Remove dragged item and insert at target position
+      const [draggedItem] = openFiles.splice(draggedIndex, 1);
+      openFiles.splice(targetIndex, 0, draggedItem);
+
+      return {
+        openFiles,
+        draggedTabId: null,
+        dragOverTabId: null
+      };
+    }, () => {
+      this.persistOpenFiles();
+    });
+  };
+
+  handleTabDragEnd = () => {
+    this.setState({ draggedTabId: null, dragOverTabId: null });
   };
 
   handleTabClose = (fileId, event) => {
@@ -1012,27 +1177,138 @@ class App extends Component {
     });
   };
 
+  handleNewTab = () => {
+    const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newFile = {
+      id: fileId,
+      name: "Untitled",
+      htmlContent: "",
+      jadeContent: ""
+    };
+
+    this.setState(prevState => {
+      const openFiles = [...prevState.openFiles, newFile];
+      return {
+        openFiles,
+        activeFileId: fileId,
+        HTMLCode: "",
+        JADECode: ""
+      };
+    }, () => {
+      this.persistHTMLCode("");
+      this.persistJadeCode("");
+      this.persistOpenFiles();
+      this.persistActiveFileId();
+    });
+  };
+
+  handleKeyDown = event => {
+    const key = event.key ? event.key.toLowerCase() : '';
+    const code = event.code || '';
+    
+    // Command+Shift+K (Mac) or Ctrl+Shift+K (Windows/Linux) to delete current line
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && (key === 'k' || code === 'KeyK')) {
+      event.preventDefault();
+      event.stopPropagation();
+      // Get the active editor (HTML or JADE)
+      const htmlEditor = this.htmlEditor;
+      const jadeEditor = this.jadeEditor;
+      
+      // Determine which editor has focus and delete line in that editor
+      if (htmlEditor && htmlEditor.isFocused()) {
+        htmlEditor.removeLines();
+      } else if (jadeEditor && jadeEditor.isFocused()) {
+        jadeEditor.removeLines();
+      }
+      return false;
+    }
+    
+    // Option+Command+T (Mac) or Alt+Ctrl+T (Windows/Linux) to create a new tab
+    if ((event.metaKey || event.ctrlKey) && event.altKey && (key === 't' || code === 'KeyT')) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.handleNewTab();
+      return false;
+    }
+    
+    // Option+Command+O (Mac) or Alt+Ctrl+O (Windows/Linux) to open files
+    if ((event.metaKey || event.ctrlKey) && event.altKey && (key === 'o' || code === 'KeyO')) {
+      event.preventDefault();
+      event.stopPropagation();
+      // Trigger the file input click
+      const fileInput = document.getElementById('open-file-input');
+      if (fileInput) {
+        fileInput.click();
+      }
+      return false;
+    }
+    
+    // Control+Option+Command+W (Mac) or Ctrl+Alt+W (Windows/Linux) to close all except active tab
+    if (event.metaKey && event.altKey && event.ctrlKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.state.activeFileId) {
+        this.setState(prevState => {
+          const activeFile = prevState.openFiles.find(f => f.id === prevState.activeFileId);
+          if (activeFile) {
+            return { openFiles: [activeFile] };
+          }
+          return null;
+        }, () => {
+          this.persistOpenFiles();
+        });
+      }
+      return false;
+    }
+    
+    // Shift+Option+Command+W (Mac) or Shift+Alt+Ctrl+W (Windows/Linux) to close all tabs
+    if ((event.metaKey || event.ctrlKey) && event.altKey && event.shiftKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.setState({
+        openFiles: [],
+        activeFileId: null,
+        HTMLCode: HTMLCode,
+        JADECode: JADECode
+      }, () => {
+        this.persistOpenFiles();
+        this.persistActiveFileId();
+        this.persistHTMLCode(HTMLCode);
+        this.persistJadeCode(JADECode);
+      });
+      return false;
+    }
+    
+    // Option+Command+W (Mac) or Alt+Ctrl+W (Windows/Linux) to close active tab
+    if ((event.metaKey || event.ctrlKey) && event.altKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.state.activeFileId) {
+        this.handleTabClose(this.state.activeFileId, null);
+      }
+      return false;
+    }
+  };
+
   formatTabLabel = name => {
     if (!name || typeof name !== "string") {
       return "";
     }
-
-    const MAX_LENGTH = 34;
-    const ELLIPSIS = "...";
+    
+    const MAX_LENGTH = 22;
+    
     if (name.length <= MAX_LENGTH) {
       return name;
     }
-
-    const extensionMatch = name.match(/(\.[^./\\]+)$/);
-    const extension = extensionMatch ? extensionMatch[1] : "";
-    const maxTailLength = MAX_LENGTH - ELLIPSIS.length;
-    const tailBaseLength = Math.max(extension.length + 4, 8);
-    const tailLength = Math.min(Math.max(tailBaseLength, extension.length), maxTailLength);
-    const tail = name.slice(-tailLength);
-    const availableForStart = Math.max(maxTailLength - tail.length, 1);
-    const start = name.slice(0, availableForStart);
-
-    return `${start}${ELLIPSIS}${tail}`;
+    
+    // Show first 7 chars, ellipsis, then last 12 chars (including extension)
+    const startChars = 7;
+    const endChars = 12;
+    
+    const start = name.slice(0, startChars);
+    const end = name.slice(-endChars);
+    
+    return `${start}...${end}`;
   };
 
   initializeScrollSync = () => {
@@ -1218,7 +1494,7 @@ class App extends Component {
     this.setState({ useSoftTabs });
     setTimeout(() => {
       this.updateHTML();
-      this.updateJADE();
+      this.regenerateAllTabsPug();
     }, 100);
   };
 
@@ -1249,9 +1525,31 @@ class App extends Component {
       { enableSvgIdToClass: isEnabled },
       () => {
         this.persistSvgIdToClassToggle(isEnabled);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
+  };
+
+  regenerateAllTabsPug = () => {
+    // Regenerate Pug for all open files with current settings
+    this.setState(prevState => {
+      const updatedFiles = prevState.openFiles.map(file => ({
+        ...file,
+        jadeContent: this.convertHtmlToJade(file.htmlContent)
+      }));
+      
+      // Update current active tab display
+      const activeFile = updatedFiles.find(f => f.id === prevState.activeFileId);
+      const jadeCode = activeFile ? activeFile.jadeContent : prevState.JADECode;
+      
+      return {
+        openFiles: updatedFiles,
+        JADECode: jadeCode
+      };
+    }, () => {
+      this.persistOpenFiles();
+      this.persistJadeCode(this.state.JADECode);
+    });
   };
 
   updateHTML = () => {
@@ -1283,13 +1581,56 @@ class App extends Component {
   onTabSizeChange = event => {
     this.setState({ tabSize: parseInt(event.target.value, 10) });
     setTimeout(() => {
-      this.updateJADE();
+      this.regenerateAllTabsPug();
       this.updateHTML();
       
     }, 100);
   };
 
   findHTMLOrBodyTag = html => html.search(/<\/html>|<\/body>/) > -1;
+
+  convertHtmlToJade = (sourceHtml) => {
+    const { isSvgoEnabled, svgoSettings, useSoftTabs, tabSize } = this.state;
+    
+    if (!sourceHtml || typeof sourceHtml !== "string" || !sourceHtml.trim()) {
+      return "";
+    }
+
+    const optimizedHtml = isSvgoEnabled
+      ? this.applySvgoOptimizations(sourceHtml, svgoSettings)
+      : sourceHtml;
+
+    const isBodyless = !this.findHTMLOrBodyTag(optimizedHtml);
+    const options = {
+      bodyless: isBodyless,
+      donotencode: true
+    };
+
+    const html = optimizedHtml.replace(/template/g, "template_");
+    
+    let result = "";
+    this.Html2Jade.convertHtml(html, options, (err, jade) => {
+      if (err) {
+        result = "";
+        return;
+      }
+      let sanitizeJade = jade
+        .replace(/\|\s+$/gm, "")
+        .replace(/^(?:[\t ]*(?:\r?\n|\r))+/gm, "");
+      if (isBodyless) {
+        sanitizeJade = sanitizeJade.replace("head\n", "");
+      }
+      sanitizeJade = sanitizeJade.replace(/template_/g, "template");
+      sanitizeJade = pugBeautify(sanitizeJade, {
+        fill_tab: !useSoftTabs,
+        tab_size: tabSize
+      });
+      sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
+      result = sanitizeJade;
+    });
+    
+    return result;
+  };
 
   applySvgIdToClassTransform = jade => {
     if (!this.state.enableSvgIdToClass || typeof jade !== "string") {
@@ -1589,7 +1930,8 @@ class App extends Component {
       enableSvgIdToClass,
       svgoSettings,
       isSvgoEnabled,
-      isSvgoMenuOpen
+      isSvgoMenuOpen,
+      isHelpMenuOpen
     } = this.state;
 
     const activeSvgoSettings = svgoSettings || getDefaultSvgoSettings();
@@ -1675,7 +2017,7 @@ class App extends Component {
             ref={this.floatingControlsRef}
           >
             <div className="controls-heading">
-              <span className="logo">HTML to PUG</span>
+              <a href="https://github.com/vb-banners/html2pug" target="_blank" rel="noopener noreferrer" className="logo">HTML to PUG</a>
             </div>
             <div className="setting controls">
               <div className="open-file-control">
@@ -1686,6 +2028,7 @@ class App extends Component {
                   className="open-file-input"
                   id="open-file-input"
                   onMouseDown={event => event.stopPropagation()}
+                  multiple
                 />
                 <label htmlFor="open-file-input" className="open-file-button">
                   <span className="open-file-button__icon" aria-hidden="true">
@@ -1912,6 +2255,89 @@ class App extends Component {
                   )}
                 </div>
               </div>
+              <div className={`help-controls${isHelpMenuOpen ? " is-open" : ""}`} ref={this.helpControlsRef}>
+                <button
+                  type="button"
+                  className="help-button"
+                  onClick={this.toggleHelpMenu}
+                  aria-haspopup="dialog"
+                  aria-expanded={isHelpMenuOpen}
+                  aria-label="Help and keyboard shortcuts"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                  >
+                    <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
+                  </svg>
+                </button>
+                {isHelpMenuOpen && (
+                  <div
+                    className="help-popup"
+                    role="dialog"
+                    aria-label="Help and keyboard shortcuts"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <div className="help-popup__content">
+                      <h2 className="help-popup__title">HTML to Pug Converter</h2>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Keyboard Shortcuts</h3>
+                        <div className="help-popup__shortcuts">
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
+                            <span>New tab</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>O</kbd>
+                            <span>Open files</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close tab</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⇧</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close all tabs</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close other tabs</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd>
+                            <span>Delete line</span>
+                          </div>
+                        </div>
+                      </section>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Repository</h3>
+                        <div className="help-popup__links">
+                          <a href="https://github.com/vb-banners/html2pug" target="_blank" rel="noopener noreferrer">
+                            github.com/vb-banners/html2pug
+                          </a>
+                        </div>
+                      </section>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Based on</h3>
+                        <div className="help-popup__links">
+                          <a href="https://github.com/dvamvo/html2pug" target="_blank" rel="noopener noreferrer">
+                            github.com/dvamvo/html2pug
+                          </a>
+                          <a href="https://github.com/jakearchibald/svgomg" target="_blank" rel="noopener noreferrer">
+                            github.com/jakearchibald/svgomg
+                          </a>
+                          <a href="https://github.com/svg/svgo" target="_blank" rel="noopener noreferrer">
+                            github.com/svg/svgo
+                          </a>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {this.state.openFiles.length > 0 && (
@@ -1919,8 +2345,14 @@ class App extends Component {
               {this.state.openFiles.map(file => (
                 <div
                   key={file.id}
-                  className={`tab${file.id === this.state.activeFileId ? " active" : ""}`}
+                  className={`tab${file.id === this.state.activeFileId ? " active" : ""}${this.state.draggedTabId === file.id ? " dragging" : ""}${this.state.dragOverTabId === file.id ? " drag-over" : ""}`}
                   onClick={() => this.handleTabSwitch(file.id)}
+                  draggable="true"
+                  onDragStart={(e) => this.handleTabDragStart(file.id, e)}
+                  onDragOver={(e) => this.handleTabDragOver(file.id, e)}
+                  onDragLeave={this.handleTabDragLeave}
+                  onDrop={(e) => this.handleTabDrop(file.id, e)}
+                  onDragEnd={this.handleTabDragEnd}
                 >
                   <span className="tab__name" title={file.name}>
                     {this.formatTabLabel(file.name)}
@@ -1949,6 +2381,29 @@ class App extends Component {
                   </button>
                 </div>
               ))}
+              <button
+                type="button"
+                className="tab-bar__new-tab"
+                onClick={this.handleNewTab}
+                aria-label="New tab"
+                title="New tab"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 5v14M5 12h14"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
             </div>
           )}
           <div

@@ -234,6 +234,18 @@ footer {
   letter-spacing: 0.05em;
   color: #f6f7fb;
   line-height: 1;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.floating-controls .logo:hover {
+  color: #73d0ff;
+}
+
+.floating-controls .logo:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .floating-controls .fork-link {
@@ -813,8 +825,8 @@ footer {
 .tab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 6px;
+  padding: 10px 12px 10px 18px;
   background: transparent;
   border-right: 1px solid #2c3750;
   color: #8f9bb8;
@@ -826,8 +838,18 @@ footer {
   transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
   position: relative;
-  min-width: 148px;
-  max-width: 280px;
+  min-width: 140px;
+  max-width: 240px;
+}
+
+.tab.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.tab.drag-over {
+  background: rgba(247, 198, 91, 0.15);
+  border-left: 2px solid var(--accent-color);
 }
 
 .tab:hover {
@@ -853,13 +875,12 @@ footer {
 
 .tab__name {
   flex: 1 1 auto;
-  display: flex;
-  align-items: center;
+  display: block;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.2;
-  padding-right: 4px;
+  padding-right: 0;
+  min-width: 0;
 }
 
 .tab__close {
@@ -898,6 +919,41 @@ footer {
 }
 
 .tab__close svg {
+  display: block;
+}
+
+.tab-bar__new-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #8f9bb8;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  border-right: 1px solid #2c3750;
+  flex-shrink: 0;
+  outline: none;
+}
+
+.tab-bar__new-tab:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--accent-color);
+}
+
+.tab-bar__new-tab:focus {
+  outline: none;
+}
+
+.tab-bar__new-tab:focus-visible {
+  outline: none;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-bar__new-tab svg {
   display: block;
 }
 
@@ -959,4 +1015,176 @@ footer {
   .editor {
     border-bottom: 1px solid lightgray;
   }
+}
+
+/* Help Button and Popup */
+.floating-controls .help-controls {
+  position: relative;
+  margin-left: auto;
+}
+
+.floating-controls .help-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid #343d4c;
+  background: #1f2430;
+  color: #cbccc6;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-controls .help-button:hover {
+  background: #232a3a;
+  border-color: #3f495c;
+}
+
+.floating-controls .help-button:focus-visible {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(247, 198, 91, 0.25);
+}
+
+.floating-controls .help-controls.is-open .help-button {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 1px rgba(247, 198, 91, 0.2);
+}
+
+.floating-controls .help-popup {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 400px;
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+  background: rgba(31, 36, 48, 0.90);
+  backdrop-filter: blur(2px);
+  border: 1px solid #343d4c;
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(9, 13, 23, 0.55);
+  overflow: hidden;
+  z-index: 12;
+}
+
+.floating-controls .help-popup__content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  display: block;
+  box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #3f495c #232a3a;
+}
+
+.floating-controls .help-popup__content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.floating-controls .help-popup__content::-webkit-scrollbar-track {
+  background: #232a3a;
+  border-radius: 4px;
+}
+
+.floating-controls .help-popup__content::-webkit-scrollbar-thumb {
+  background: #3f495c;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.floating-controls .help-popup__content::-webkit-scrollbar-thumb:hover {
+  background: #4f5a70;
+}
+
+.floating-controls .help-popup__title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #cbccc6;
+  margin: 0 0 24px 0;
+  letter-spacing: 0.01em;
+}
+
+.floating-controls .help-popup__group {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.floating-controls .help-popup__group:last-child {
+  margin-bottom: 0;
+}
+
+.floating-controls .help-popup__group-heading {
+  font-size: 14px;
+  font-weight: 600;
+  color: #707a8c;
+  letter-spacing: 0.03em;
+  margin: 0;
+}
+
+.floating-controls .help-popup__shortcuts {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.floating-controls .help-shortcut {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  color: #cbccc6;
+}
+
+.floating-controls .help-shortcut kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  background: #343d4c;
+  border: 1px solid #3f495c;
+  border-radius: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #cbccc6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.floating-controls .help-shortcut span {
+  flex: 1;
+}
+
+.floating-controls .help-popup__links {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.floating-controls .help-popup__links a {
+  color: #73d0ff;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s ease;
+  word-break: break-all;
+}
+
+.floating-controls .help-popup__links a:hover {
+  color: #95e6cb;
+  text-decoration: underline;
+}
+
+.floating-controls .help-popup__links a:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
