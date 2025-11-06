@@ -496,11 +496,78 @@ class App extends Component {
     this.scheduleControlsReflow();
   };
 
+  handlePaste = async (event) => {
+    // Check if clipboard contains files
+    const items = event.clipboardData && event.clipboardData.items;
+    if (!items) return;
+
+    const files = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          // Check if it's an HTML or SVG file
+          const fileName = file.name || 'pasted-file';
+          const fileType = file.type;
+          
+          if (fileType === 'image/svg+xml' || 
+              fileType === 'text/html' || 
+              fileName.endsWith('.svg') || 
+              fileName.endsWith('.html') || 
+              fileName.endsWith('.htm')) {
+            files.push(file);
+          }
+        }
+      }
+    }
+
+    // If we found files, prevent default paste and handle them
+    if (files.length > 0) {
+      event.preventDefault();
+      
+      // Process files similar to handleFileOpen
+      const filePromises = files.map((file, index) => {
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const content = e.target.result;
+            const fileId = Date.now() + index;
+            const fileName = file.name || ('pasted-' + fileId + '.' + (file.type === 'image/svg+xml' ? 'svg' : 'html'));
+            
+            resolve({
+              id: fileId,
+              name: fileName,
+              htmlContent: content,
+              jadeContent: this.convertHtmlToJade(content)
+            });
+          };
+          reader.readAsText(file);
+        });
+      });
+
+      const newFiles = await Promise.all(filePromises);
+      
+      this.setState(prevState => ({
+        openFiles: [...prevState.openFiles, ...newFiles],
+        activeFileId: newFiles[0].id,
+        HTMLCode: newFiles[0].htmlContent,
+        JADECode: newFiles[0].jadeContent
+      }), () => {
+        this.persistOpenFiles();
+        this.persistActiveFileId();
+        this.persistHTMLCode(newFiles[0].htmlContent);
+        this.persistJadeCode(newFiles[0].jadeContent);
+      });
+    }
+  };
+
   componentDidMount() {
     document.addEventListener("mousemove", this.handleDocumentMouseMove);
     document.addEventListener("mouseup", this.handleDocumentMouseUp);
     document.addEventListener("pointerdown", this.handleDocumentPointerDown);
     document.addEventListener("keydown", this.handleKeyDown);
+    document.addEventListener("paste", this.handlePaste);
     if (typeof window !== "undefined" && typeof window.addEventListener === "function") {
       window.addEventListener("resize", this.handleWindowResize);
     }
@@ -583,6 +650,7 @@ class App extends Component {
     document.removeEventListener("mousemove", this.handleDocumentMouseMove);
     document.removeEventListener("mouseup", this.handleDocumentMouseUp);
     document.removeEventListener("keydown", this.handleKeyDown);
+    document.removeEventListener("paste", this.handlePaste);
     if (typeof window !== "undefined" && typeof window.removeEventListener === "function") {
       window.removeEventListener("resize", this.handleWindowResize);
     }

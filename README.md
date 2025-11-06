@@ -9,6 +9,7 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
 - **Multi-File Support**: Open and work with multiple files simultaneously using tabs
 - **Dual Editor Interface**: Side-by-side HTML and PUG editors with syntax highlighting
 - **Drag & Drop**: Reorder tabs by dragging them to different positions
+- **Paste Files**: Copy HTML/SVG files from Finder and paste them directly into the app
 
 ### Customization
 - **Flexible Indentation**:
@@ -80,10 +81,11 @@ This will create an optimized build in the `docs/` folder (configured for GitHub
 1. **HTML to PUG**: Type or paste HTML code in the left editor panel
 2. **PUG to HTML**: Type or paste PUG code in the right editor panel
 3. **Open Files**: Click the "Open" button or use <kbd>⌥</kbd><kbd>⌘</kbd><kbd>O</kbd> to select and open multiple HTML/SVG files
-4. **Create New Tab**: Click the "+" button in the tab bar or use <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
-5. **Switch Tabs**: Click on any tab to switch between open files
-6. **Reorder Tabs**: Drag and drop tabs to rearrange them
-7. **Close Tabs**: Click the "×" button on a tab or use keyboard shortcuts
+4. **Paste Files**: Copy HTML or SVG files from Finder (⌘+C) and paste them (⌘+V) directly into the app to open them as new tabs
+5. **Create New Tab**: Click the "+" button in the tab bar or use <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
+6. **Switch Tabs**: Click on any tab to switch between open files
+7. **Reorder Tabs**: Drag and drop tabs to rearrange them
+8. **Close Tabs**: Click the "×" button on a tab or use keyboard shortcuts
 
 ### Settings
 Use the floating controls to customize your experience:
