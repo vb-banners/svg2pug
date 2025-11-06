@@ -314,6 +314,7 @@ class App extends Component {
   sectionRef = React.createRef();
   splitRef = React.createRef();
   svgoControlsRef = React.createRef();
+  helpControlsRef = React.createRef();
   dragOffset = { x: 0, y: 0 };
   resizeListenersAttached = false;
   cachedSplitRect = null;
@@ -337,8 +338,11 @@ class App extends Component {
     svgoSettings: getDefaultSvgoSettings(),
     isSvgoEnabled: true,
     isSvgoMenuOpen: false,
+    isHelpMenuOpen: false,
     openFiles: [],
-    activeFileId: null
+    activeFileId: null,
+    draggedTabId: null,
+    dragOverTabId: null
   };
 
   constructor() {
@@ -707,7 +711,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoEnabled(nextEnabled);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -729,7 +733,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -759,7 +763,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -787,7 +791,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings();
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -802,15 +806,31 @@ class App extends Component {
     this.setState({ isSvgoMenuOpen: false });
   };
 
+  toggleHelpMenu = () => {
+    this.setState(prevState => ({
+      isHelpMenuOpen: !prevState.isHelpMenuOpen
+    }));
+  };
+
+  closeHelpMenu = () => {
+    this.setState({ isHelpMenuOpen: false });
+  };
+
   handleDocumentPointerDown = event => {
-    if (!this.state.isSvgoMenuOpen) {
-      return;
+    if (this.state.isSvgoMenuOpen) {
+      const controls = this.svgoControlsRef.current;
+      if (controls && controls.contains(event.target)) {
+        return;
+      }
+      this.closeSvgoMenu();
     }
-    const controls = this.svgoControlsRef.current;
-    if (controls && controls.contains(event.target)) {
-      return;
+    if (this.state.isHelpMenuOpen) {
+      const helpControls = this.helpControlsRef.current;
+      if (helpControls && helpControls.contains(event.target)) {
+        return;
+      }
+      this.closeHelpMenu();
     }
-    this.closeSvgoMenu();
   };
 
   buildSvgoConfig = settings => {
@@ -904,7 +924,7 @@ class App extends Component {
       },
       () => {
         this.persistSvgoSettings(defaults);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
   };
@@ -986,6 +1006,63 @@ class App extends Component {
     });
   };
 
+  handleTabDragStart = (fileId, event) => {
+    this.setState({ draggedTabId: fileId });
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/html', fileId);
+  };
+
+  handleTabDragOver = (fileId, event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    
+    if (this.state.dragOverTabId !== fileId) {
+      this.setState({ dragOverTabId: fileId });
+    }
+  };
+
+  handleTabDragLeave = () => {
+    this.setState({ dragOverTabId: null });
+  };
+
+  handleTabDrop = (targetFileId, event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const { draggedTabId } = this.state;
+    
+    if (!draggedTabId || draggedTabId === targetFileId) {
+      this.setState({ draggedTabId: null, dragOverTabId: null });
+      return;
+    }
+
+    this.setState(prevState => {
+      const openFiles = [...prevState.openFiles];
+      const draggedIndex = openFiles.findIndex(f => f.id === draggedTabId);
+      const targetIndex = openFiles.findIndex(f => f.id === targetFileId);
+      
+      if (draggedIndex === -1 || targetIndex === -1) {
+        return { draggedTabId: null, dragOverTabId: null };
+      }
+
+      // Remove dragged item and insert at target position
+      const [draggedItem] = openFiles.splice(draggedIndex, 1);
+      openFiles.splice(targetIndex, 0, draggedItem);
+
+      return {
+        openFiles,
+        draggedTabId: null,
+        dragOverTabId: null
+      };
+    }, () => {
+      this.persistOpenFiles();
+    });
+  };
+
+  handleTabDragEnd = () => {
+    this.setState({ draggedTabId: null, dragOverTabId: null });
+  };
+
   handleTabClose = (fileId, event) => {
     if (event) {
       event.stopPropagation();
@@ -1061,6 +1138,23 @@ class App extends Component {
     const key = event.key ? event.key.toLowerCase() : '';
     const code = event.code || '';
     
+    // Command+Shift+K (Mac) or Ctrl+Shift+K (Windows/Linux) to delete current line
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && (key === 'k' || code === 'KeyK')) {
+      event.preventDefault();
+      event.stopPropagation();
+      // Get the active editor (HTML or JADE)
+      const htmlEditor = this.htmlEditor;
+      const jadeEditor = this.jadeEditor;
+      
+      // Determine which editor has focus and delete line in that editor
+      if (htmlEditor && htmlEditor.isFocused()) {
+        htmlEditor.removeLines();
+      } else if (jadeEditor && jadeEditor.isFocused()) {
+        jadeEditor.removeLines();
+      }
+      return false;
+    }
+    
     // Option+Command+T (Mac) or Alt+Ctrl+T (Windows/Linux) to create a new tab
     if ((event.metaKey || event.ctrlKey) && event.altKey && (key === 't' || code === 'KeyT')) {
       event.preventDefault();
@@ -1080,6 +1174,52 @@ class App extends Component {
       }
       return false;
     }
+    
+    // Control+Option+Command+W (Mac) or Ctrl+Alt+W (Windows/Linux) to close all except active tab
+    if (event.metaKey && event.altKey && event.ctrlKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.state.activeFileId) {
+        this.setState(prevState => {
+          const activeFile = prevState.openFiles.find(f => f.id === prevState.activeFileId);
+          if (activeFile) {
+            return { openFiles: [activeFile] };
+          }
+          return null;
+        }, () => {
+          this.persistOpenFiles();
+        });
+      }
+      return false;
+    }
+    
+    // Shift+Option+Command+W (Mac) or Shift+Alt+Ctrl+W (Windows/Linux) to close all tabs
+    if ((event.metaKey || event.ctrlKey) && event.altKey && event.shiftKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.setState({
+        openFiles: [],
+        activeFileId: null,
+        HTMLCode: HTMLCode,
+        JADECode: JADECode
+      }, () => {
+        this.persistOpenFiles();
+        this.persistActiveFileId();
+        this.persistHTMLCode(HTMLCode);
+        this.persistJadeCode(JADECode);
+      });
+      return false;
+    }
+    
+    // Option+Command+W (Mac) or Alt+Ctrl+W (Windows/Linux) to close active tab
+    if ((event.metaKey || event.ctrlKey) && event.altKey && (key === 'w' || code === 'KeyW')) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (this.state.activeFileId) {
+        this.handleTabClose(this.state.activeFileId, null);
+      }
+      return false;
+    }
   };
 
   formatTabLabel = name => {
@@ -1092,10 +1232,6 @@ class App extends Component {
     if (name.length <= MAX_LENGTH) {
       return name;
     }
-    
-    // Extract the file extension
-    const extensionMatch = name.match(/(\.[^./\\]+)$/);
-    const extension = extensionMatch ? extensionMatch[1] : "";
     
     // Show first 7 chars, ellipsis, then last 12 chars (including extension)
     const startChars = 7;
@@ -1290,7 +1426,7 @@ class App extends Component {
     this.setState({ useSoftTabs });
     setTimeout(() => {
       this.updateHTML();
-      this.updateJADE();
+      this.regenerateAllTabsPug();
     }, 100);
   };
 
@@ -1321,9 +1457,31 @@ class App extends Component {
       { enableSvgIdToClass: isEnabled },
       () => {
         this.persistSvgIdToClassToggle(isEnabled);
-        this.updateJADE();
+        this.regenerateAllTabsPug();
       }
     );
+  };
+
+  regenerateAllTabsPug = () => {
+    // Regenerate Pug for all open files with current settings
+    this.setState(prevState => {
+      const updatedFiles = prevState.openFiles.map(file => ({
+        ...file,
+        jadeContent: this.convertHtmlToJade(file.htmlContent)
+      }));
+      
+      // Update current active tab display
+      const activeFile = updatedFiles.find(f => f.id === prevState.activeFileId);
+      const jadeCode = activeFile ? activeFile.jadeContent : prevState.JADECode;
+      
+      return {
+        openFiles: updatedFiles,
+        JADECode: jadeCode
+      };
+    }, () => {
+      this.persistOpenFiles();
+      this.persistJadeCode(this.state.JADECode);
+    });
   };
 
   updateHTML = () => {
@@ -1355,7 +1513,7 @@ class App extends Component {
   onTabSizeChange = event => {
     this.setState({ tabSize: parseInt(event.target.value, 10) });
     setTimeout(() => {
-      this.updateJADE();
+      this.regenerateAllTabsPug();
       this.updateHTML();
       
     }, 100);
@@ -1364,7 +1522,7 @@ class App extends Component {
   findHTMLOrBodyTag = html => html.search(/<\/html>|<\/body>/) > -1;
 
   convertHtmlToJade = (sourceHtml) => {
-    const { isSvgoEnabled, svgoSettings, enableSvgIdToClass, useSoftTabs, tabSize } = this.state;
+    const { isSvgoEnabled, svgoSettings, useSoftTabs, tabSize } = this.state;
     
     if (!sourceHtml || typeof sourceHtml !== "string" || !sourceHtml.trim()) {
       return "";
@@ -1704,7 +1862,8 @@ class App extends Component {
       enableSvgIdToClass,
       svgoSettings,
       isSvgoEnabled,
-      isSvgoMenuOpen
+      isSvgoMenuOpen,
+      isHelpMenuOpen
     } = this.state;
 
     const activeSvgoSettings = svgoSettings || getDefaultSvgoSettings();
@@ -1790,7 +1949,7 @@ class App extends Component {
             ref={this.floatingControlsRef}
           >
             <div className="controls-heading">
-              <span className="logo">HTML to PUG</span>
+              <a href="https://github.com/vb-banners/html2pug" target="_blank" rel="noopener noreferrer" className="logo">HTML to PUG</a>
             </div>
             <div className="setting controls">
               <div className="open-file-control">
@@ -2028,6 +2187,89 @@ class App extends Component {
                   )}
                 </div>
               </div>
+              <div className={`help-controls${isHelpMenuOpen ? " is-open" : ""}`} ref={this.helpControlsRef}>
+                <button
+                  type="button"
+                  className="help-button"
+                  onClick={this.toggleHelpMenu}
+                  aria-haspopup="dialog"
+                  aria-expanded={isHelpMenuOpen}
+                  aria-label="Help and keyboard shortcuts"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="currentColor"
+                  >
+                    <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
+                  </svg>
+                </button>
+                {isHelpMenuOpen && (
+                  <div
+                    className="help-popup"
+                    role="dialog"
+                    aria-label="Help and keyboard shortcuts"
+                    onClick={event => event.stopPropagation()}
+                  >
+                    <div className="help-popup__content">
+                      <h2 className="help-popup__title">HTML to Pug Converter</h2>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Keyboard Shortcuts</h3>
+                        <div className="help-popup__shortcuts">
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
+                            <span>New tab</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>O</kbd>
+                            <span>Open files</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close tab</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⇧</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close all tabs</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd>
+                            <span>Close other tabs</span>
+                          </div>
+                          <div className="help-shortcut">
+                            <kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd>
+                            <span>Delete line</span>
+                          </div>
+                        </div>
+                      </section>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Repository</h3>
+                        <div className="help-popup__links">
+                          <a href="https://github.com/vb-banners/html2pug" target="_blank" rel="noopener noreferrer">
+                            github.com/vb-banners/html2pug
+                          </a>
+                        </div>
+                      </section>
+                      <section className="help-popup__group">
+                        <h3 className="help-popup__group-heading">Based on</h3>
+                        <div className="help-popup__links">
+                          <a href="https://github.com/dvamvo/html2pug" target="_blank" rel="noopener noreferrer">
+                            github.com/dvamvo/html2pug
+                          </a>
+                          <a href="https://github.com/jakearchibald/svgomg" target="_blank" rel="noopener noreferrer">
+                            github.com/jakearchibald/svgomg
+                          </a>
+                          <a href="https://github.com/svg/svgo" target="_blank" rel="noopener noreferrer">
+                            github.com/svg/svgo
+                          </a>
+                        </div>
+                      </section>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           {this.state.openFiles.length > 0 && (
@@ -2035,8 +2277,14 @@ class App extends Component {
               {this.state.openFiles.map(file => (
                 <div
                   key={file.id}
-                  className={`tab${file.id === this.state.activeFileId ? " active" : ""}`}
+                  className={`tab${file.id === this.state.activeFileId ? " active" : ""}${this.state.draggedTabId === file.id ? " dragging" : ""}${this.state.dragOverTabId === file.id ? " drag-over" : ""}`}
                   onClick={() => this.handleTabSwitch(file.id)}
+                  draggable="true"
+                  onDragStart={(e) => this.handleTabDragStart(file.id, e)}
+                  onDragOver={(e) => this.handleTabDragOver(file.id, e)}
+                  onDragLeave={this.handleTabDragLeave}
+                  onDrop={(e) => this.handleTabDrop(file.id, e)}
+                  onDragEnd={this.handleTabDragEnd}
                 >
                   <span className="tab__name" title={file.name}>
                     {this.formatTabLabel(file.name)}
