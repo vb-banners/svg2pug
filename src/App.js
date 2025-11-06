@@ -908,42 +908,60 @@ class App extends Component {
   };
 
   handleFileOpen = event => {
-    const file = event.target.files && event.target.files[0];
-    if (!file) {
+    const files = event.target.files;
+    if (!files || files.length === 0) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = e => {
-      const content = e.target && e.target.result;
-      if (typeof content === "string") {
-        const fileId = `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        const newFile = {
-          id: fileId,
-          name: file.name,
-          htmlContent: content,
-          jadeContent: ""
-        };
+    let filesProcessed = 0;
+    const totalFiles = files.length;
+    const newFiles = [];
 
-        this.setState(prevState => {
-          const openFiles = [...prevState.openFiles, newFile];
-          return {
-            openFiles,
-            activeFileId: fileId,
-            HTMLCode: content
-          };
-        }, () => {
-          this.persistHTMLCode(content);
-          this.persistOpenFiles();
-          this.persistActiveFileId();
-          this.updateJADE();
-        });
-      }
-    };
-    reader.onerror = () => {
-      console.error("Failed to read file");
-    };
-    reader.readAsText(file);
+    Array.from(files).forEach((file, index) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const content = e.target && e.target.result;
+        if (typeof content === "string") {
+          const fileId = `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
+          
+          // Convert HTML to Pug for this file
+          const jadeContent = this.convertHtmlToJade(content);
+          
+          newFiles.push({
+            id: fileId,
+            name: file.name,
+            htmlContent: content,
+            jadeContent: jadeContent
+          });
+
+          filesProcessed++;
+          if (filesProcessed === totalFiles) {
+            // All files have been read, update state
+            this.setState(prevState => {
+              const openFiles = [...prevState.openFiles, ...newFiles];
+              // Set the first newly added file as active
+              const activeFileId = newFiles[0].id;
+              return {
+                openFiles,
+                activeFileId,
+                HTMLCode: newFiles[0].htmlContent,
+                JADECode: newFiles[0].jadeContent
+              };
+            }, () => {
+              this.persistHTMLCode(newFiles[0].htmlContent);
+              this.persistJadeCode(newFiles[0].jadeContent);
+              this.persistOpenFiles();
+              this.persistActiveFileId();
+            });
+          }
+        }
+      };
+      reader.onerror = () => {
+        console.error(`Failed to read file: ${file.name}`);
+        filesProcessed++;
+      };
+      reader.readAsText(file);
+    });
 
     // Reset the input so the same file can be selected again
     event.target.value = "";
@@ -1290,6 +1308,49 @@ class App extends Component {
   };
 
   findHTMLOrBodyTag = html => html.search(/<\/html>|<\/body>/) > -1;
+
+  convertHtmlToJade = (sourceHtml) => {
+    const { isSvgoEnabled, svgoSettings, enableSvgIdToClass, useSoftTabs, tabSize } = this.state;
+    
+    if (!sourceHtml || typeof sourceHtml !== "string" || !sourceHtml.trim()) {
+      return "";
+    }
+
+    const optimizedHtml = isSvgoEnabled
+      ? this.applySvgoOptimizations(sourceHtml, svgoSettings)
+      : sourceHtml;
+
+    const isBodyless = !this.findHTMLOrBodyTag(optimizedHtml);
+    const options = {
+      bodyless: isBodyless,
+      donotencode: true
+    };
+
+    const html = optimizedHtml.replace(/template/g, "template_");
+    
+    let result = "";
+    this.Html2Jade.convertHtml(html, options, (err, jade) => {
+      if (err) {
+        result = "";
+        return;
+      }
+      let sanitizeJade = jade
+        .replace(/\|\s+$/gm, "")
+        .replace(/^(?:[\t ]*(?:\r?\n|\r))+/gm, "");
+      if (isBodyless) {
+        sanitizeJade = sanitizeJade.replace("head\n", "");
+      }
+      sanitizeJade = sanitizeJade.replace(/template_/g, "template");
+      sanitizeJade = pugBeautify(sanitizeJade, {
+        fill_tab: !useSoftTabs,
+        tab_size: tabSize
+      });
+      sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
+      result = sanitizeJade;
+    });
+    
+    return result;
+  };
 
   applySvgIdToClassTransform = jade => {
     if (!this.state.enableSvgIdToClass || typeof jade !== "string") {
@@ -1686,6 +1747,7 @@ class App extends Component {
                   className="open-file-input"
                   id="open-file-input"
                   onMouseDown={event => event.stopPropagation()}
+                  multiple
                 />
                 <label htmlFor="open-file-input" className="open-file-button">
                   <span className="open-file-button__icon" aria-hidden="true">
