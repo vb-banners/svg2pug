@@ -1,6 +1,4 @@
 const GLOBAL_DEFAULTS = {
-  showOriginal: true,
-  compareGzipped: false,
   multipass: false,
   pretty: false,
   floatPrecision: 3,
@@ -94,14 +92,6 @@ export const mergeSvgoSettings = raw => {
     ...defaults,
     plugins: { ...defaults.plugins }
   };
-
-  if (Object.prototype.hasOwnProperty.call(raw, "showOriginal")) {
-    merged.showOriginal = Boolean(raw.showOriginal);
-  }
-
-  if (Object.prototype.hasOwnProperty.call(raw, "compareGzipped")) {
-    merged.compareGzipped = Boolean(raw.compareGzipped);
-  }
 
   if (Object.prototype.hasOwnProperty.call(raw, "multipass")) {
     merged.multipass = Boolean(raw.multipass);

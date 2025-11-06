@@ -1513,8 +1513,6 @@ class App extends Component {
     };
 
     const globalToggleItems = [
-      { label: "Show original", name: "showOriginal" },
-      { label: "Compare gzipped", name: "compareGzipped" },
       { label: "Prettify markup", name: "pretty" },
       { label: "Multipass", name: "multipass" }
     ];
