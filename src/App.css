@@ -450,11 +450,33 @@ footer {
   height: 100%;
   max-height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 24px;
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: #3f495c #232a3a;
+}
+
+.floating-controls .svgo-popup__content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.floating-controls .svgo-popup__content::-webkit-scrollbar-track {
+  background: #232a3a;
+  border-radius: 4px;
+}
+
+.floating-controls .svgo-popup__content::-webkit-scrollbar-thumb {
+  background: #3f495c;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.floating-controls .svgo-popup__content::-webkit-scrollbar-thumb:hover {
+  background: #4f5a70;
 }
 
 .floating-controls .svgo-popup__group {
@@ -486,6 +508,7 @@ footer {
 
 .floating-controls .svgo-popup__features {
   padding-right: 0;
+  padding-bottom: 4px;
 }
 
 .floating-controls .svgo-toggle {
