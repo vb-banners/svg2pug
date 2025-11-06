@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,shrink-to-fit=no"><meta name="description" content="HTML2PUG help you convert a HTML snippet to a PUG snippet. Useful for testing out how something would look in PUG vs HTML"><meta property="og:title" content="HTML to PUG Converter"><meta property="og:site_name" content="HTML2PUG"><meta name="1password-ignore" content="true"><meta name="bitwarden-ignore" content="true"><meta name="lastpass-ignore" content="true"><script>"undefined"==typeof process?window.process={versions:{node:"16.0.0"},env:{}}:process.versions||(process.versions={node:"16.0.0"})</script><script src="./pug.js"></script><script src="./he.js"></script><script src="./html-to-jade.js"></script><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="manifest" href="./manifest.json" crossorigin="use-credentials"><link rel="icon" type="image/svg+xml" href="./favicon.svg"><meta name="theme-color" content="#1F242E"><script>// Filter out browser extension errors from console
+    (function() {
+      const originalError = console.error;
+      console.error = function(...args) {
+        const msg = args.join(' ');
+        if (msg.includes('content_script') || 
+            (msg.includes('Cannot read') && msg.includes('control'))) {
+          return; // Silently ignore extension errors
+        }
+        originalError.apply(console, args);
+      };
+    })();</script><title>HTML to PUG Online Realtime Converter</title><link href="./static/css/main.530d8220.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root" class="container-fluid"></div><div id="ad-script"></div><script type="text/javascript" src="./static/js/main.08cb315f.js"></script></body></html>
