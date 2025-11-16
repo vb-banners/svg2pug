@@ -115,7 +115,7 @@
     };
 
     Writer.prototype.tagAttr = function (node, indents) {
-      var attr, attrName, attrValue, attrs, invalidClassNames, result, _i, _len;
+      var attr, attrName, attrValue, attrs, invalidClassNames, result, colorAttrs, otherAttrs, _i, _len;
       if (indents == null) {
         indents = '';
       }
@@ -123,7 +123,8 @@
       if (!attrs || attrs.length === 0) {
         return '';
       } else {
-        result = [];
+        colorAttrs = [];
+        otherAttrs = [];
         for (_i = 0, _len = attrs.length; _i < _len; _i++) {
           attr = attrs[_i];
           if (attr && attr.nodeName) {
@@ -136,14 +137,23 @@
                 return item && !isValidJadeClassName(item);
               });
               if (invalidClassNames.length > 0) {
-                result.push(this.buildTagAttr(attrName, invalidClassNames.join(' ')));
+                otherAttrs.push(this.buildTagAttr(attrName, invalidClassNames.join(' ')));
               }
             } else {
               attrValue = attrValue.replace(/(\r|\n)\s*/g, "\\$1" + indents);
-              result.push(this.buildTagAttr(attrName, attrValue));
+              var builtAttr = this.buildTagAttr(attrName, attrValue);
+              // Check if attribute is color-related
+              if (attrName === 'fill' || attrName === 'stroke' || attrName === 'color' || 
+                  attrName === 'stop-color' || attrName === 'flood-color' || attrName === 'lighting-color') {
+                colorAttrs.push(builtAttr);
+              } else {
+                otherAttrs.push(builtAttr);
+              }
             }
           }
         }
+        // Combine color attributes first, then other attributes
+        result = colorAttrs.concat(otherAttrs);
         if (result.length > 0) {
           return "(" + (result.join(this.attrSep)) + ")";
         } else {
@@ -415,7 +425,21 @@
       if (indent) {
         output.enter();
       }
+      // Collect all children into an array
+      var childNodes = [];
       this.writer.forEachChild(parent, function (child) {
+        childNodes.push(child);
+      });
+      // Sort children so defs elements come first
+      childNodes.sort(function(a, b) {
+        var aIsDefs = a.nodeType === 1 && a.tagName && a.tagName.toLowerCase() === 'defs';
+        var bIsDefs = b.nodeType === 1 && b.tagName && b.tagName.toLowerCase() === 'defs';
+        if (aIsDefs && !bIsDefs) return -1;
+        if (!aIsDefs && bIsDefs) return 1;
+        return 0;
+      });
+      // Process sorted children
+      childNodes.forEach(function(child) {
         var nodeType;
         nodeType = child.nodeType;
         if (nodeType === 1) {

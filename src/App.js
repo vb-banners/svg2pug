@@ -27,6 +27,7 @@ const JADE_CODE_STORAGE_KEY = "html2pug:jadeCode";
 const ID_TO_CLASS_STORAGE_KEY = "html2pug:idToClassToggle";
 const SVGO_SETTINGS_STORAGE_KEY = "html2pug:svgoSettings";
 const SVGO_ENABLED_STORAGE_KEY = "html2pug:svgoEnabled";
+const PUG_SIZE_VARS_STORAGE_KEY = "html2pug:pugSizeVars";
 const OPEN_FILES_STORAGE_KEY = "html2pug:openFiles";
 const ACTIVE_FILE_STORAGE_KEY = "html2pug:activeFileId";
 
@@ -331,6 +332,7 @@ class App extends Component {
     tabSize: 4,
     useSoftTabs: true,
     enableSvgIdToClass: false,
+    enablePugSizeVars: false,
     controlsPosition: null,
     isControlsDragging: false,
     pugWidthRatio: 0.5,
@@ -539,7 +541,7 @@ class App extends Component {
               id: fileId,
               name: fileName,
               htmlContent: content,
-              jadeContent: this.convertHtmlToJade(content)
+              jadeContent: this.convertHtmlToJade(content, fileName)
             });
           };
           reader.readAsText(file);
@@ -596,6 +598,9 @@ class App extends Component {
       const savedSvgoEnabled = window.localStorage.getItem(
         SVGO_ENABLED_STORAGE_KEY
       );
+      const savedPugSizeVars = window.localStorage.getItem(
+        PUG_SIZE_VARS_STORAGE_KEY
+      );
       const restoredState = {};
       if (typeof savedHtmlCode === "string") {
         restoredState.HTMLCode = savedHtmlCode;
@@ -605,6 +610,9 @@ class App extends Component {
       }
       if (savedIdToClass === "true" || savedIdToClass === "false") {
         restoredState.enableSvgIdToClass = savedIdToClass === "true";
+      }
+      if (savedPugSizeVars === "true" || savedPugSizeVars === "false") {
+        restoredState.enablePugSizeVars = savedPugSizeVars === "true";
       }
       if (savedSvgoSettings) {
         const parsedSvgo = JSON.parse(savedSvgoSettings);
@@ -742,6 +750,17 @@ class App extends Component {
     try {
       window.localStorage.setItem(
         SVGO_ENABLED_STORAGE_KEY,
+        isEnabled ? "true" : "false"
+      );
+    } catch (error) {
+      // Ignore persistence issues.
+    }
+  };
+
+  persistPugSizeVars = isEnabled => {
+    try {
+      window.localStorage.setItem(
+        PUG_SIZE_VARS_STORAGE_KEY,
         isEnabled ? "true" : "false"
       );
     } catch (error) {
@@ -937,7 +956,7 @@ class App extends Component {
       multipass: Boolean(settings.multipass),
       plugins,
       js2svg: {
-        pretty: Boolean(settings.pretty),
+        pretty: false,
         indent: 2
       }
     };
@@ -1015,7 +1034,7 @@ class App extends Component {
           const fileId = `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
           
           // Convert HTML to Pug for this file
-          const jadeContent = this.convertHtmlToJade(content);
+          const jadeContent = this.convertHtmlToJade(content, file.name);
           
           newFiles.push({
             id: fileId,
@@ -1530,12 +1549,23 @@ class App extends Component {
     );
   };
 
+  onPugSizeVarsToggle = event => {
+    const isEnabled = Boolean(event.target.checked);
+    this.setState(
+      { enablePugSizeVars: isEnabled },
+      () => {
+        this.persistPugSizeVars(isEnabled);
+        this.regenerateAllTabsPug();
+      }
+    );
+  };
+
   regenerateAllTabsPug = () => {
     // Regenerate Pug for all open files with current settings
     this.setState(prevState => {
       const updatedFiles = prevState.openFiles.map(file => ({
         ...file,
-        jadeContent: this.convertHtmlToJade(file.htmlContent)
+        jadeContent: this.convertHtmlToJade(file.htmlContent, file.name)
       }));
       
       // Update current active tab display
@@ -1589,16 +1619,24 @@ class App extends Component {
 
   findHTMLOrBodyTag = html => html.search(/<\/html>|<\/body>/) > -1;
 
-  convertHtmlToJade = (sourceHtml) => {
+  convertHtmlToJade = (sourceHtml, fileName = null) => {
     const { isSvgoEnabled, svgoSettings, useSoftTabs, tabSize } = this.state;
     
     if (!sourceHtml || typeof sourceHtml !== "string" || !sourceHtml.trim()) {
       return "";
     }
 
+    let processedHtml = sourceHtml;
+    
+    // Remove rect elements with id/class matching filename (without extension)
+    if (fileName) {
+      const fileNameWithoutExt = fileName.replace(/\.(svg|html|htm)$/i, '');
+      processedHtml = this.removeMatchingRects(processedHtml, fileNameWithoutExt);
+    }
+
     const optimizedHtml = isSvgoEnabled
-      ? this.applySvgoOptimizations(sourceHtml, svgoSettings)
-      : sourceHtml;
+      ? this.applySvgoOptimizations(processedHtml, svgoSettings)
+      : processedHtml;
 
     const isBodyless = !this.findHTMLOrBodyTag(optimizedHtml);
     const options = {
@@ -1626,10 +1664,53 @@ class App extends Component {
         tab_size: tabSize
       });
       sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
+      sanitizeJade = this.applyPugSizeVarsTransform(sanitizeJade, optimizedHtml);
       result = sanitizeJade;
     });
     
     return result;
+  };
+
+  removeMatchingRects = (html, fileNameWithoutExt) => {
+    if (!fileNameWithoutExt || typeof html !== "string") {
+      return html;
+    }
+    
+    // Create a temporary DOM element to parse the HTML
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, "text/html");
+    
+    // Find all rect elements
+    const rects = doc.querySelectorAll('rect');
+    
+    rects.forEach(rect => {
+      const id = rect.getAttribute('id');
+      const classAttr = rect.getAttribute('class');
+      
+      // Check if id matches filename
+      if (id === fileNameWithoutExt) {
+        rect.remove();
+        return;
+      }
+      
+      // Check if any class matches filename
+      if (classAttr) {
+        const classes = classAttr.split(/\s+/);
+        if (classes.includes(fileNameWithoutExt)) {
+          rect.remove();
+          return;
+        }
+      }
+    });
+    
+    // Return the modified HTML
+    // For SVG files, return just the SVG content
+    const svgElement = doc.querySelector('svg');
+    if (svgElement) {
+      return svgElement.outerHTML;
+    }
+    
+    return doc.body ? doc.body.innerHTML : html;
   };
 
   applySvgIdToClassTransform = jade => {
@@ -1657,8 +1738,56 @@ class App extends Component {
     return transformed;
   };
 
+  applyPugSizeVarsTransform = (jade, html) => {
+    if (!this.state.enablePugSizeVars || typeof jade !== "string" || typeof html !== "string") {
+      return jade;
+    }
+
+    // Extract viewBox dimensions from SVG
+    const viewBoxMatch = html.match(/viewBox=['"]([^'"]+)['"]/i);
+    if (!viewBoxMatch) {
+      return jade;
+    }
+
+    const viewBoxValues = viewBoxMatch[1].split(/\s+/);
+    if (viewBoxValues.length !== 4) {
+      return jade;
+    }
+
+    const viewBoxWidth = viewBoxValues[2];
+    const viewBoxHeight = viewBoxValues[3];
+
+    if (!viewBoxWidth || !viewBoxHeight) {
+      return jade;
+    }
+
+    let transformed = jade;
+
+    // Replace width='300' with width=width (and similar patterns)
+    // Patterns to match: width='300', width="300", width='300.0', width="300.0"
+    const widthPatterns = [
+      new RegExp(`width=['"](${viewBoxWidth}(?:\\.0*)?)['"](\\s*)`, 'g'),
+      new RegExp(`width=['"](${viewBoxWidth}(?:\\.0*)?)['"](\\s*),`, 'g')
+    ];
+    
+    const heightPatterns = [
+      new RegExp(`height=['"](${viewBoxHeight}(?:\\.0*)?)['"](\\s*)`, 'g'),
+      new RegExp(`height=['"](${viewBoxHeight}(?:\\.0*)?)['"](\\s*),`, 'g')
+    ];
+
+    widthPatterns.forEach(pattern => {
+      transformed = transformed.replace(pattern, 'width=width$2');
+    });
+
+    heightPatterns.forEach(pattern => {
+      transformed = transformed.replace(pattern, 'height=height$2');
+    });
+
+    return transformed;
+  };
+
   updateJADE = () => {
-    const { HTMLCode, isSvgoEnabled, svgoSettings } = this.state;
+    const { HTMLCode, isSvgoEnabled, svgoSettings, activeFileId, openFiles } = this.state;
     const sourceHtml = typeof HTMLCode === "string" ? HTMLCode : "";
     if (!sourceHtml.trim()) {
       this.setState({ JADECode: "" }, () => {
@@ -1667,9 +1796,26 @@ class App extends Component {
       return;
     }
 
+    // Get the active file name if available
+    let fileName = null;
+    if (activeFileId && openFiles.length > 0) {
+      const activeFile = openFiles.find(f => f.id === activeFileId);
+      if (activeFile && activeFile.name) {
+        fileName = activeFile.name;
+      }
+    }
+
+    let processedHtml = sourceHtml;
+    
+    // Remove rect elements with id/class matching filename (without extension)
+    if (fileName) {
+      const fileNameWithoutExt = fileName.replace(/\.(svg|html|htm)$/i, '');
+      processedHtml = this.removeMatchingRects(processedHtml, fileNameWithoutExt);
+    }
+
     const optimizedHtml = isSvgoEnabled
-      ? this.applySvgoOptimizations(sourceHtml, svgoSettings)
-      : sourceHtml;
+      ? this.applySvgoOptimizations(processedHtml, svgoSettings)
+      : processedHtml;
 
     const isBodyless = !this.findHTMLOrBodyTag(optimizedHtml);
     const options = {
@@ -1694,6 +1840,7 @@ class App extends Component {
         tab_size: this.state.tabSize
       });
       sanitizeJade = this.applySvgIdToClassTransform(sanitizeJade);
+      sanitizeJade = this.applyPugSizeVarsTransform(sanitizeJade, optimizedHtml);
       this.setState(prevState => {
         const { activeFileId, openFiles } = prevState;
         if (activeFileId && openFiles.length > 0) {
@@ -1928,6 +2075,7 @@ class App extends Component {
       pugWidthRatio,
       isResizingSplit,
       enableSvgIdToClass,
+      enablePugSizeVars,
       svgoSettings,
       isSvgoEnabled,
       isSvgoMenuOpen,
@@ -1948,7 +2096,7 @@ class App extends Component {
       scrollPastEnd: 0.5
     };
 
-    const renderToggle = (label, name, checked, onChange, variant = "default") => {
+    const renderToggle = (label, name, checked, onChange, variant = "default", title = "") => {
       const classNames = ["svgo-toggle"];
       if (checked) {
         classNames.push("is-active");
@@ -1958,7 +2106,7 @@ class App extends Component {
       }
 
       return (
-        <label key={name} className={classNames.join(" ")}>
+        <label key={name} className={classNames.join(" ")} title={title}>
           <input
             className="svgo-toggle__input"
             type="checkbox"
@@ -2000,8 +2148,11 @@ class App extends Component {
     };
 
     const globalToggleItems = [
-      { label: "Prettify markup", name: "pretty" },
-      { label: "Multipass", name: "multipass" }
+      { 
+        label: "Multipass", 
+        name: "multipass",
+        description: "Runs optimization up to 10 times until no further improvements are made (vs single pass)"
+      }
     ];
 
     const htmlWidthRatio = 1 - pugWidthRatio;
@@ -2138,8 +2289,18 @@ class App extends Component {
                                 item.label,
                                 item.name,
                                 Boolean(activeSvgoSettings[item.name]),
-                                this.handleSvgoGlobalCheckboxChange
+                                this.handleSvgoGlobalCheckboxChange,
+                                "default",
+                                item.description
                               )
+                            )}
+                            {renderToggle(
+                              "PUG size vars",
+                              "pugSizeVars",
+                              enablePugSizeVars,
+                              this.onPugSizeVarsToggle,
+                              "default",
+                              "Converts width and height attributes to PUG variables when they match viewBox dimensions"
                             )}
                           </div>
                           <div className="svgo-popup__sliders">
@@ -2166,7 +2327,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
@@ -2180,7 +2342,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
@@ -2194,7 +2357,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
@@ -2208,7 +2372,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
@@ -2222,7 +2387,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
@@ -2236,7 +2402,8 @@ class App extends Component {
                                 option.id,
                                 Boolean(activeSvgoSettings.plugins[option.id]),
                                 this.handleSvgoPluginToggle,
-                                "compact"
+                                "compact",
+                                option.description
                               )
                             )}
                           </div>
