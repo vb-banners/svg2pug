@@ -1,15 +1,17 @@
-# HTML to PUG Converter
+# HTML to PUG Converter (Beta)
 
-A real-time online converter that transforms HTML code into PUG (formerly Jade) template syntax. Built with React and featuring a split-pane editor with live conversion, multi-file support, and advanced SVG optimization.
+A real-time online converter that transforms HTML code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization.
 
 ## 🌟 Features
 
 ### Core Functionality
-- **Real-time Conversion**: Instantly convert HTML to PUG and vice versa
+- **Bidirectional Conversion**: Instantly convert HTML to PUG and vice versa with live editing in both editors
 - **Multi-File Support**: Open and work with multiple files simultaneously using tabs
-- **Dual Editor Interface**: Side-by-side HTML and PUG editors with syntax highlighting
+- **Monaco Editor**: Professional code editing experience with VS Code-like features and keyboard shortcuts
+- **Quick Copy Feature**: Multi-select specific elements or lines with Shift+Click for precise copying
 - **Drag & Drop**: Reorder tabs by dragging them to different positions
-- **Paste Files**: Copy HTML/SVG files from Finder and paste them directly into the app
+- **File Upload**: Upload multiple HTML/SVG files at once using the Upload button
+- **Paste Files**: Copy SVG/HTML files from Finder and paste with <kbd>⌘</kbd><kbd>V</kbd> to create new tabs or replace blank tab content
 
 ### Customization
 - **Flexible Indentation**:
@@ -27,7 +29,7 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
   - Adjustable precision for numbers and transforms
   - Multipass optimization for maximum compression
   - Hover hints explaining each plugin's function
-- **SVG ID to Class Conversion**: Convert SVG `id` attributes to `class` attributes
+- **SVG Id to Class Conversion**: Convert SVG `id` attributes to `class` attributes
 - **PUG Size Variables**: Automatically convert width/height to variables when matching viewBox
 - **Smart SVG Processing**:
   - Color attributes (fill, stroke) always appear first in output
@@ -35,17 +37,6 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
   - Auto-removal of rect elements matching filename
 - **Smart Formatting**: Automatic beautification of both HTML and PUG code
 - **Bodyless Mode**: Automatically detects and handles HTML snippets without `<html>` or `<body>` tags
-
-## ⌨️ Keyboard Shortcuts
-
-| Shortcut | Action |
-|----------|--------|
-| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd> (Mac) / <kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>T</kbd> (Win/Linux) | Create new tab |
-| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>O</kbd> (Mac) / <kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>O</kbd> (Win/Linux) | Open files |
-| <kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd> (Mac) / <kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>W</kbd> (Win/Linux) | Close current tab |
-| <kbd>⇧</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd> (Mac) / <kbd>Shift</kbd><kbd>Alt</kbd><kbd>Ctrl</kbd><kbd>W</kbd> (Win/Linux) | Close all tabs |
-| <kbd>⌃</kbd><kbd>⌥</kbd><kbd>⌘</kbd><kbd>W</kbd> (Mac) / <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>W</kbd> (Win/Linux) | Close all other tabs |
-| <kbd>⌘</kbd><kbd>⇧</kbd><kbd>K</kbd> (Mac) / <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>K</kbd> (Win/Linux) | Delete current line |
 
 ## 🚀 Demo
 
@@ -85,14 +76,17 @@ This will create an optimized build in the `docs/` folder (configured for GitHub
 ## 📝 Usage
 
 ### Basic Operations
-1. **HTML to PUG**: Type or paste HTML code in the left editor panel
-2. **PUG to HTML**: Type or paste PUG code in the right editor panel
-3. **Open Files**: Click the "Open" button or use <kbd>⌥</kbd><kbd>⌘</kbd><kbd>O</kbd> to select and open multiple HTML/SVG files
-4. **Paste Files**: Copy HTML or SVG files from Finder (⌘+C) and paste them (⌘+V) directly into the app to open them as new tabs
-5. **Create New Tab**: Click the "+" button in the tab bar or use <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
-6. **Switch Tabs**: Click on any tab to switch between open files
-7. **Reorder Tabs**: Drag and drop tabs to rearrange them
-8. **Close Tabs**: Click the "×" button on a tab or use keyboard shortcuts
+1. **HTML to PUG**: Type or paste HTML code in the left editor panel - PUG updates instantly
+2. **PUG to HTML**: Edit PUG code in the right editor panel - HTML updates in real-time
+3. **Upload Files**: Click the "Upload" button in the tab bar to select and open multiple HTML/SVG files
+4. **Paste Files**: Copy HTML/SVG files from Finder (<kbd>⌘</kbd><kbd>C</kbd>) and paste (<kbd>⌘</kbd><kbd>V</kbd>) directly into the app
+   - When no tabs are open: Creates new tabs for each pasted file
+   - When pasting into a blank tab: Replaces the tab content and renames it
+5. **Quick Copy**: Use <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> to toggle Quick Copy mode, then Shift+Click to select multiple lines or elements
+6. **Create New Tab**: Click the "+" button in the tab bar
+7. **Switch Tabs**: Click on any tab to switch between open files
+8. **Reorder Tabs**: Drag and drop tabs to rearrange them
+9. **Close Tabs**: Click the "×" button on a tab
 
 ### Settings
 Use the floating controls to customize your experience:
@@ -121,12 +115,15 @@ All toggles feature helpful hover hints explaining their function.
 
 ## 🔧 Technologies Used
 
-- **React** - UI framework
-- **Ace Editor** - Code editor component with syntax highlighting
-- **Pug** - Template engine for conversion
+- **React 18** - UI framework
+- **TypeScript** - Type-safe development
+- **Monaco Editor** - VS Code's code editor with advanced features
+- **Zustand** - State management with localStorage persistence
+- **Pug** - Template engine for PUG to HTML conversion
 - **html-to-jade** - HTML to PUG conversion library
 - **SVGO** - SVG optimization library
-- **js-beautify** - Code formatting and beautification
+- **Tailwind CSS** - Utility-first styling
+- **shadcn/ui** - High-quality React components
 - **he** - HTML entity encoder/decoder
 
 ## 📂 Project Structure
@@ -134,20 +131,28 @@ All toggles feature helpful hover hints explaining their function.
 ```
 html2pug/
 ├── public/           # Static assets and HTML template
-│   ├── html-to-jade.js
-│   ├── pug.js
-│   └── he.js
-├── src/              # React source code
-│   ├── App.js        # Main application component
-│   ├── App.css       # Application styles
+│   ├── html-to-jade.js  # HTML to PUG conversion
+│   ├── pug.js           # PUG to HTML conversion
+│   └── he.js            # HTML entity encoding
+├── src/              # TypeScript/React source code
+│   ├── App.tsx       # Main application component
 │   ├── Components/   # React components
-│   │   └── Editor.js # Ace editor wrapper
-│   ├── themes/       # Editor themes
-│   │   └── ayu-mirage-custom.js
-│   ├── vendor/       # Third-party libraries
-│   │   └── svgo-browser.esm.js
-│   ├── svgo-config.js # SVGO plugin configuration
-│   └── template.js   # Default code templates
+│   │   ├── EditorPane.tsx        # Monaco editor wrapper
+│   │   ├── TabBar.tsx            # File tabs with upload
+│   │   ├── FloatingControls.tsx  # Settings toolbar
+│   │   ├── HelpDialog.tsx        # Help dialog
+│   │   └── SvgoSettingsDialog.tsx # SVGO settings
+│   ├── hooks/        # Custom React hooks
+│   │   ├── useConversion.ts      # Conversion logic
+│   │   ├── useFileTabs.ts        # Tab management
+│   │   ├── useKeyboardShortcuts.ts # Keyboard handling
+│   │   └── useSplitPane.ts       # Resizable panes
+│   ├── store/        # Zustand state management
+│   │   └── useAppStore.ts
+│   ├── types/        # TypeScript definitions
+│   ├── themes/       # Monaco editor themes
+│   └── vendor/       # Third-party libraries
+│       └── svgo-browser.esm.js
 ├── docs/             # Production build (GitHub Pages)
 └── scripts/          # Build scripts
     ├── build-svgo.js

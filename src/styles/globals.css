@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* Ayu Mirage Dark Theme Colors */
+    --background: 215 22% 14%; /* #1F242E */
+    --foreground: 47 10% 84%; /* #D9D7CE */
+    
+    --card: 218 20% 16%; /* #1D2330 */
+    --card-foreground: 47 10% 84%; /* #D9D7CE */
+    
+    --popover: 218 20% 16%; /* #1D2330 */
+    --popover-foreground: 47 10% 84%; /* #D9D7CE */
+    
+    --primary: 40 100% 72%; /* #FFD173 */
+    --primary-foreground: 215 22% 14%; /* #1F242E */
+    
+    --secondary: 215 26% 19%; /* #232834 */
+    --secondary-foreground: 47 10% 84%; /* #D9D7CE */
+    
+    --muted: 215 26% 19%; /* #232834 */
+    --muted-foreground: 220 23% 60%; /* #8F9BB8 */
+    
+    --accent: 197 100% 72%; /* #73D0FF */
+    --accent-foreground: 215 22% 14%; /* #1F242E */
+    
+    --destructive: 9 100% 64%; /* #FF3333 */
+    --destructive-foreground: 47 10% 84%; /* #D9D7CE */
+    
+    --border: 217 25% 24%; /* #2C3750 */
+    --input: 217 25% 24%; /* #2C3750 */
+    --ring: 40 100% 72%; /* #FFD173 */
+    
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+/* Hex color inline styling is injected dynamically */
+
+/* Suppress ResizeObserver errors during rapid resizing */
+@supports selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+  }
+}
+
+/* Force Monaco Editor to use Ayu Mirage colors */
+.monaco-editor,
+.monaco-editor .monaco-editor-background,
+.monaco-editor .inputarea.ime-input {
+  background-color: #1F242E !important;
+  color: #d9d7ce !important;
+}
+
+.monaco-editor,
+.monaco-editor .overflow-guard {
+  border: 0.5px solid #2c3750;
+  border-radius: 0;
+}
+
+.monaco-editor .view-lines {
+  color: #d9d7ce !important;
+}
+
+.monaco-editor .margin {
+  background-color: #1d2330 !important;
+  border-right: 1px solid #2c3750 !important;
+}
+
+.monaco-editor .line-numbers {
+  color: #8f9bb8 !important;
+}
+
+.monaco-editor .current-line ~ .line-numbers {
+  color: #d9d7ce !important;
+}
+
+.monaco-editor .cursor {
+  background-color: #FFD173 !important;
+  color: #1F242E !important;
+}
+
+.monaco-editor .selected-text {
+  background-color: #33415e !important;
+}
+
+.monaco-editor .focused .selected-text {
+  background-color: #33415e !important;
+}
+
+.monaco-editor .view-line {
+  color: #d9d7ce !important;
+}
+
+/* Monaco scrollbar styling */
+.monaco-editor .scrollbar .slider {
+  background: rgba(51, 65, 94, 0.533) !important;
+}
+
+.monaco-editor .scrollbar .slider:hover {
+  background: rgba(51, 65, 94, 0.667) !important;
+}
+
+.monaco-editor .scrollbar .slider.active {
+  background: rgba(51, 65, 94, 0.8) !important;
+}
