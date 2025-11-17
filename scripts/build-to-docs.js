@@ -1,19 +1,25 @@
 #!/usr/bin/env node
 const { spawnSync } = require('child_process');
-const { existsSync, rmSync, renameSync } = require('fs');
+const { existsSync, rmSync, renameSync, readdirSync, copyFileSync, mkdirSync } = require('fs');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
 
 const buildPath = path.join(projectRoot, 'build');
 const docsPath = path.join(projectRoot, 'docs');
+const legacyDocsPath = path.join(projectRoot, '.legacy-docs');
 
 if (existsSync(buildPath)) {
   rmSync(buildPath, { recursive: true, force: true });
 }
 
+// Keep the previous docs build around temporarily so we can preserve legacy assets
+if (existsSync(legacyDocsPath)) {
+  rmSync(legacyDocsPath, { recursive: true, force: true });
+}
+
 if (existsSync(docsPath)) {
-  rmSync(docsPath, { recursive: true, force: true });
+  renameSync(docsPath, legacyDocsPath);
 }
 
 const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
@@ -24,7 +30,7 @@ const result = spawnSync(npxCommand, ['react-scripts', 'build'], {
 });
 
 if (result.status !== 0) {
-  process.exit(result.status ?? 1);
+  process.exit(result.status != null ? result.status : 1);
 }
 
 if (!existsSync(buildPath)) {
@@ -34,4 +40,30 @@ if (!existsSync(buildPath)) {
 
 renameSync(buildPath, docsPath);
 
-console.log('Moved build output to docs/.');
+const copyLegacyAssets = (from, to) => {
+  if (!existsSync(from)) return;
+  const entries = readdirSync(from, { withFileTypes: true });
+  if (!existsSync(to)) {
+    mkdirSync(to, { recursive: true });
+  }
+  for (const entry of entries) {
+    const sourcePath = path.join(from, entry.name);
+    const targetPath = path.join(to, entry.name);
+    if (entry.isDirectory()) {
+      copyLegacyAssets(sourcePath, targetPath);
+    } else if (!existsSync(targetPath)) {
+      copyFileSync(sourcePath, targetPath);
+    }
+  }
+};
+
+// Preserve old hashed chunks (JS/CSS) so previously loaded clients don't 404
+copyLegacyAssets(path.join(legacyDocsPath, 'static/js'), path.join(docsPath, 'static/js'));
+copyLegacyAssets(path.join(legacyDocsPath, 'static/css'), path.join(docsPath, 'static/css'));
+copyLegacyAssets(path.join(legacyDocsPath, 'static/media'), path.join(docsPath, 'static/media'));
+
+if (existsSync(legacyDocsPath)) {
+  rmSync(legacyDocsPath, { recursive: true, force: true });
+}
+
+console.log('Moved build output to docs/. Preserved legacy assets for cache safety.');

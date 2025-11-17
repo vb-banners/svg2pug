@@ -66,19 +66,9 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Wait for store to hydrate from localStorage AND scripts to load
-  if (!_hasHydrated || !scriptsLoaded) {
-    return (
-      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: '#1E2431', color: '#CBCCC6' }}>
-        <div className="text-center">
-          <div className="text-lg mb-2">Loading HTML2PUG...</div>
-          {!scriptsLoaded && <div className="text-sm opacity-70">Loading conversion engines...</div>}
-        </div>
-      </div>
-    );
-  }
-  
-    // Handle conversion for global HTML code (when no tabs are open)
+  const isLoading = !_hasHydrated || !scriptsLoaded;
+
+  // Handle conversion for global HTML code (when no tabs are open)
   useEffect(() => {
     if (openFiles.length === 0) {
       const result = convertHtmlToPug(HTMLCode, {
@@ -195,6 +185,18 @@ const App: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSvgoMenuOpen, isHelpMenuOpen, setIsSvgoMenuOpen, setIsHelpMenuOpen]);
+
+  // Wait for store to hydrate from localStorage AND scripts to load
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: '#1E2431', color: '#CBCCC6' }}>
+        <div className="text-center">
+          <div className="text-lg mb-2">Loading HTML2PUG...</div>
+          {!scriptsLoaded && <div className="text-sm opacity-70">Loading conversion engines...</div>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen text-foreground" style={{ backgroundColor: '#1E2431' }}>

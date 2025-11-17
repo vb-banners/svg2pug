@@ -366,3 +366,19 @@ export const useAppStore = create<AppStore>()(
     }
   )
 );
+
+// Ensure hydration flag flips even when there was no stored state
+const markHydrated = () => {
+  const state = useAppStore.getState();
+  if (!state._hasHydrated) {
+    state.setHasHydrated(true);
+  }
+};
+
+if (useAppStore.persist?.hasHydrated?.()) {
+  markHydrated();
+} else {
+  useAppStore.persist?.onFinishHydration?.(() => {
+    markHydrated();
+  });
+}
