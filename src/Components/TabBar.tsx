@@ -49,18 +49,22 @@ const SortableTab: React.FC<SortableTabProps> = ({ id, title, isActive, onSelect
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{
+        ...style,
+        backgroundColor: isActive ? '#232937' : 'transparent'
+      }}
       className={cn(
-        'flex items-center gap-2 pl-6 pr-3 py-2 border-r-[0.5px] border-border border-t border-t-transparent select-none',
+        'flex items-center gap-2 pl-6 pr-3 py-2 border-r border-border border-t border-t-transparent select-none',
         'hover:bg-muted transition-colors relative',
-        isActive && 'bg-muted text-accent-foreground border-t-[#ffd369]',
+        isActive && 'text-accent-foreground border-t-[#FFC94F]',
         isDragging && 'opacity-50'
       )}
       role="tab"
       aria-selected={isActive}
     >
       <span 
-        className="text-sm truncate max-w-[200px] text-foreground cursor-pointer" 
+        className="text-sm truncate max-w-[200px] cursor-pointer" 
+        style={{ color: isActive ? '#C5C5C5' : '#6E7A8F' }}
         title={title}
         onClick={onSelect}
         {...attributes}
@@ -204,12 +208,13 @@ export const TabBar: React.FC = () => {
         aria-label="Upload HTML files"
       />
       
-      <div className="flex items-center h-10 bg-card border-b-[0.5px] border-border overflow-x-auto" role="tablist">
+      <div className="flex items-center h-10 overflow-x-auto" role="tablist" style={{ backgroundColor: '#1E2431', borderBottom: '1px solid #2F3A4B' }}>
         <Button
           variant="ghost"
           size="sm"
           onClick={handleUploadClick}
           className="h-8 ml-2 mr-2 shrink-0"
+          style={{ color: '#C5C5C5' }}
           aria-label="Upload files"
         >
           <Upload className="w-4 h-4 mr-2" />

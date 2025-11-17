@@ -4,6 +4,7 @@ import { EditorPane } from './Components/EditorPane';
 import { FloatingControls } from './Components/FloatingControls';
 import { SvgoSettingsDialog } from './Components/SvgoSettingsDialog';
 import { HelpDialog } from './Components/HelpDialog';
+import { StatusBar } from './Components/StatusBar';
 import { useAppStore } from './store/useAppStore';
 import { useConversion } from './hooks/useConversion';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -152,7 +153,7 @@ const App: React.FC = () => {
   }, [isSvgoMenuOpen, isHelpMenuOpen, setIsSvgoMenuOpen, setIsHelpMenuOpen]);
 
   return (
-    <div className="flex flex-col h-screen bg-background text-foreground">
+    <div className="flex flex-col h-screen text-foreground" style={{ backgroundColor: '#1E2431' }}>
       {/* Floating toolbar */}
       <FloatingControls />
       
@@ -161,6 +162,9 @@ const App: React.FC = () => {
       
       {/* Editor panes */}
       <EditorPane />
+      
+      {/* Status Bar */}
+      <StatusBar />
       
       {/* SVGO Settings Dialog */}
       <SvgoSettingsDialog 

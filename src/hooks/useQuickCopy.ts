@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
+import { useAppStore } from '../store/useAppStore';
 
 /**
  * Hook to enable Quick Copy feature in Monaco Editor
@@ -21,6 +22,8 @@ export const useQuickCopy = (
   const lastHoverLineRef = useRef<number>(-1);
   const editorRef = useRef(editor);
   const multiSelectionsRef = useRef<Array<{ selection: monaco.Selection; text: string }>>([]);
+  const messageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveringRef = useRef(false);
   
   // Update editor ref when it changes
   useEffect(() => {
@@ -43,11 +46,15 @@ export const useQuickCopy = (
       currentSelectionRef.current = null;
       lastHoverLineRef.current = -1;
       multiSelectionsRef.current = [];
+      useAppStore.getState().setStatusMessage(null);
       return;
     }
 
     const model = currentEditor.getModel();
     if (!model) return;
+
+    // Show initial Quick Copy active message
+    useAppStore.getState().setStatusMessage('Quick Copy is active');
 
     /**
      * Get the indentation level of a line
@@ -93,6 +100,16 @@ export const useQuickCopy = (
     };
 
     /**
+     * Extract block name from first line (element name or class)
+     */
+    const getBlockName = (lineNumber: number): string => {
+      const lineContent = model.getLineContent(lineNumber).trim();
+      // Match element name (e.g., "div", "rect.bg", "svg#icon")
+      const match = lineContent.match(/^([a-zA-Z0-9._#-]+)/);
+      return match ? match[1] : 'block';
+    };
+
+    /**
      * Create a selection for the line and its children
      */
     const selectLineWithChildren = (lineNumber: number) => {
@@ -112,24 +129,48 @@ export const useQuickCopy = (
     // Mouse move listener for hover selection
     hoverDisposableRef.current = currentEditor.onMouseMove((e) => {
       const position = e.target.position;
+      
       if (!position) {
+        isHoveringRef.current = false;
+        if (messageTimeoutRef.current) {
+          clearTimeout(messageTimeoutRef.current);
+        }
+        messageTimeoutRef.current = setTimeout(() => {
+          if (!isHoveringRef.current) {
+            useAppStore.setState({ statusMessage: 'Quick Copy is active' });
+          }
+        }, 200);
         return;
       }
 
+      isHoveringRef.current = true;
       const lineNumber = position.lineNumber;
+      
+      // Clear any pending timeout
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+        messageTimeoutRef.current = null;
+      }
       
       // Only update selection if we're hovering over a different line
       if (lineNumber !== lastHoverLineRef.current) {
         lastHoverLineRef.current = lineNumber;
         const newSelection = selectLineWithChildren(lineNumber);
         
-        // If we have multi-selections, add the hover selection to them for visual feedback
+        // Show hover message (stays while hovering)
+        const blockName = getBlockName(lineNumber);
+        const { start, end } = getChildLines(lineNumber);
+        const lineCount = end - start + 1;
+        
         if (multiSelectionsRef.current.length > 0) {
+          useAppStore.setState({ statusMessage: `Click to add ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})` });
           const allSelections = [
             ...multiSelectionsRef.current.map((item) => item.selection),
             newSelection
           ];
           currentEditor.setSelections(allSelections);
+        } else {
+          useAppStore.setState({ statusMessage: `Click to copy ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})` });
         }
       }
     });
@@ -204,9 +245,15 @@ export const useQuickCopy = (
             const normalizedText = normalizedLines.join('\n');
             
             // Copy to clipboard
-            navigator.clipboard.writeText(normalizedText).catch((err) => {
-              console.error('Failed to copy to clipboard:', err);
-            });
+            navigator.clipboard.writeText(normalizedText)
+              .then(() => {
+                const selectionCount = multiSelectionsRef.current.length;
+                const totalLines = normalizedLines.length;
+                useAppStore.getState().setStatusMessage(`Copied ${selectionCount} selection${selectionCount !== 1 ? 's' : ''} (${totalLines} line${totalLines !== 1 ? 's' : ''})`);
+              })
+              .catch((err) => {
+                console.error('Failed to copy to clipboard:', err);
+              });
           }
         }
         
@@ -238,9 +285,15 @@ export const useQuickCopy = (
             const normalizedText = normalizedLines.join('\n');
             
             // Copy to clipboard
-            navigator.clipboard.writeText(normalizedText).catch((err) => {
-              console.error('Failed to copy to clipboard:', err);
-            });
+            navigator.clipboard.writeText(normalizedText)
+              .then(() => {
+                const blockName = getBlockName(selection.startLineNumber);
+                const lineCount = normalizedLines.length;
+                useAppStore.getState().setStatusMessage(`Copied ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`);
+              })
+              .catch((err) => {
+                console.error('Failed to copy to clipboard:', err);
+              });
           }
         }
       }
@@ -256,9 +309,14 @@ export const useQuickCopy = (
         clickDisposableRef.current.dispose();
         clickDisposableRef.current = null;
       }
+      if (messageTimeoutRef.current) {
+        clearTimeout(messageTimeoutRef.current);
+        messageTimeoutRef.current = null;
+      }
       currentSelectionRef.current = null;
       lastHoverLineRef.current = -1;
       multiSelectionsRef.current = [];
+      isHoveringRef.current = false;
     };
   }, [editor, enableQuickCopy]);
 };

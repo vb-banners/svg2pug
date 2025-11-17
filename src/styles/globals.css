@@ -9,33 +9,33 @@
 @layer base {
   :root {
     /* Ayu Mirage Dark Theme Colors */
-    --background: 215 22% 14%; /* #1F242E */
+    --background: 220 24% 13%; /* #1E2431 */
     --foreground: 47 10% 84%; /* #D9D7CE */
     
-    --card: 218 20% 16%; /* #1D2330 */
+    --card: 220 24% 13%; /* #1E2431 */
     --card-foreground: 47 10% 84%; /* #D9D7CE */
     
-    --popover: 218 20% 16%; /* #1D2330 */
+    --popover: 220 24% 13%; /* #1E2431 */
     --popover-foreground: 47 10% 84%; /* #D9D7CE */
     
-    --primary: 40 100% 72%; /* #FFD173 */
-    --primary-foreground: 215 22% 14%; /* #1F242E */
+    --primary: 45 100% 65%; /* #FFC94F */
+    --primary-foreground: 220 24% 13%; /* #1E2431 */
     
-    --secondary: 215 26% 19%; /* #232834 */
+    --secondary: 220 24% 13%; /* #1E2431 */
     --secondary-foreground: 47 10% 84%; /* #D9D7CE */
     
-    --muted: 215 26% 19%; /* #232834 */
+    --muted: 220 24% 13%; /* #1E2431 */
     --muted-foreground: 220 23% 60%; /* #8F9BB8 */
     
     --accent: 197 100% 72%; /* #73D0FF */
-    --accent-foreground: 215 22% 14%; /* #1F242E */
+    --accent-foreground: 220 24% 13%; /* #1E2431 */
     
     --destructive: 9 100% 64%; /* #FF3333 */
     --destructive-foreground: 47 10% 84%; /* #D9D7CE */
     
-    --border: 217 25% 24%; /* #2C3750 */
-    --input: 217 25% 24%; /* #2C3750 */
-    --ring: 40 100% 72%; /* #FFD173 */
+    --border: 217 25% 24%; /* #2F3A4B */
+    --input: 217 25% 24%; /* #2F3A4B */
+    --ring: 45 100% 65%; /* #FFC94F */
     
     --radius: 0.5rem;
   }
@@ -64,14 +64,18 @@
 .monaco-editor,
 .monaco-editor .monaco-editor-background,
 .monaco-editor .inputarea.ime-input {
-  background-color: #1F242E !important;
+  background-color: #232937 !important;
   color: #d9d7ce !important;
 }
 
-.monaco-editor,
+.monaco-editor {
+  border: 1px solid #2F3A4B !important;
+  border-top: none !important;
+  border-radius: 0 !important;
+}
+
 .monaco-editor .overflow-guard {
-  border: 0.5px solid #2c3750;
-  border-radius: 0;
+  border: none !important;
 }
 
 .monaco-editor .view-lines {
@@ -79,8 +83,8 @@
 }
 
 .monaco-editor .margin {
-  background-color: #1d2330 !important;
-  border-right: 1px solid #2c3750 !important;
+  background-color: #1E2431 !important;
+  border-right: 1px solid #2F3A4B !important;
 }
 
 .monaco-editor .line-numbers {
@@ -92,7 +96,7 @@
 }
 
 .monaco-editor .cursor {
-  background-color: #FFD173 !important;
+  background-color: #FFC94F !important;
   color: #1F242E !important;
 }
 

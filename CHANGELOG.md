@@ -6,6 +6,74 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.2.0-beta] - 2025-11-17
+
+### UI/UX Redesign - Complete Color Scheme Overhaul
+
+#### Visual Design Changes
+- **Color Palette Refresh**: Complete redesign with modern, cohesive color scheme
+  - Main UI background: `#1E2431` (dark blue-gray)
+  - Editor background: `#232937` (slightly lighter blue-gray for contrast)
+  - Borders and separators: `#2F3A4B` (subtle borders at 1px thickness)
+  - Primary accent color: `#FFC94F` (warm yellow for highlights and active states)
+  - UI labels: `#C5C5C5` (light gray for primary text)
+  - Muted labels: `#6E7A8F` (medium gray for secondary text)
+
+#### Component Enhancements
+- **Button Hover States**: All buttons now feature smooth hover transitions
+  - Outline and ghost buttons show `primary/10` background on hover
+  - Hover states preserved after fixing inline style conflicts
+- **Dropdown/Select Components**: Enhanced with proper hover states matching button behavior
+- **Toggle Switches**: Updated background colors to match UI theme (`#1E2431`)
+- **Editor Resize Handle**: 
+  - Reduced width to exactly 1px for cleaner appearance
+  - Added accent color (`#FFC94F`) on hover for better visibility
+  - Fixed width using inline styles with `minWidth` and `maxWidth` constraints
+- **Slider Controls**: 
+  - Redesigned thumb handles as perfect circles with explicit `borderRadius: 50%`
+  - Left side of filled range now has rounded cap (`rounded-l-full`)
+  - Thumb background: `#1E2431` with `#FFC94F` border
+  - Removed all focus rings and shadows for clean appearance
+- **Status Bar**: Added 1px top border (`#2F3A4B`) to separate from editor area
+
+#### Accessibility Improvements
+- **Comprehensive Tooltips**: Added descriptive tooltips to all interactive controls
+  - Top bar controls: "Use spaces for indentation", "Use tabs for indentation", "Number of spaces or tab width"
+  - Feature toggles: "Convert SVG id attributes to class attributes", "Automatically copy converted Pug code to clipboard", "Enable SVG optimization using SVGO"
+  - Action buttons: "Configure SVGO optimization plugins and settings", "View keyboard shortcuts and features"
+  - SVGO Settings: All 50+ plugin toggles now have detailed explanations
+    - Example: "Remove unnecessary whitespace and newlines from attributes"
+    - Example: "Convert color values to shorter formats"
+    - Example: "Find and reuse duplicate paths"
+  - Precision sliders: "Number of decimal places for floating point values" and "Number of decimal places for transformation matrices"
+
+#### Layout & Spacing Refinements
+- **SVGO Settings Dialog**:
+  - Increased toggle label spacing to 15px from switch for better readability
+  - Added 6px top margin to all toggle labels for proper vertical alignment
+  - Improved visual hierarchy with consistent spacing throughout
+- **Tab Bar**: Connected seamlessly with editor via coordinated border styles
+  - Tab bar has 1px bottom border
+  - Editor has no top border
+  - Creates single unified separator line
+- **Border Consistency**: All UI borders standardized to 1px thickness
+
+#### Monaco Editor Theme Updates
+- **Syntax Highlighting**: Updated all keyword/attribute/class/ID tokens to use `#FFC94F` accent color
+- **Editor Gutter**: Background color matches UI (`#1E2431`) with `#2F3A4B` right border
+- **Cursor**: Changed to accent color (`#FFC94F`) for better visibility
+- **Widgets**: All suggestion widgets and hover widgets use UI background color (`#1E2431`)
+
+### Technical Implementation
+- **Inline Styles Strategy**: Used inline styles with explicit hex values throughout to ensure immediate visibility and override Tailwind CSS variables
+- **CSS Specificity Management**: Carefully balanced inline styles with Tailwind classes to preserve hover states
+- **Component-Level Styling**: Updated all UI components (`Button`, `Switch`, `Select`, `Slider`, `Dialog`) with theme-consistent colors
+
+### Fixed
+- **Button Hover States**: Resolved issue where inline `backgroundColor` styles were preventing Tailwind hover classes from working
+- **Slider Appearance**: Fixed square slider thumbs by using explicit inline border-radius and removing conflicting class styles
+- **Resize Handle Width**: Ensured 1px width using `minWidth` and `maxWidth` inline styles to prevent flexbox expansion
+
 ## [0.1.0-beta] - 2025-11-17
 
 ### Major Changes - Beta Release

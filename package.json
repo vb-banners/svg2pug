@@ -1,6 +1,6 @@
 {
   "name": "HTML2PUG",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "homepage": ".",
   "dependencies": {
@@ -22,6 +22,7 @@
     "he": "^1.2.0",
     "js-beautify": "^1.8.4",
     "lucide-react": "^0.446.0",
+    "pako": "^2.1.0",
     "pug-beautify": "^0.1.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -45,6 +46,7 @@
     "@types/he": "^1.2.3",
     "@types/js-beautify": "^1.14.3",
     "@types/node": "^20.10.5",
+    "@types/pako": "^2.0.4",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",

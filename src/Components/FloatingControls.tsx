@@ -37,10 +37,10 @@ export const FloatingControls: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-background border-b border-border flex items-center gap-4 px-6 py-3">
+    <div className="w-full border-b border-border flex items-center gap-4 px-6 py-3" style={{ backgroundColor: '#1E2431' }}>
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold text-foreground leading-none">HTML to PUG</h1>
+        <h1 className="text-xl font-bold leading-none" style={{ color: '#C5C5C5' }}>HTML to PUG</h1>
         <span className="text-[10px] px-1.5 py-0.5 bg-[#FFD173]/20 text-[#FFD173] rounded-full font-medium uppercase">Beta</span>
       </div>
 
@@ -53,15 +53,15 @@ export const FloatingControls: React.FC = () => {
             onValueChange={(value) => setUseSoftTabs(value === 'spaces')}
             className="flex items-center gap-3"
           >
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Use spaces for indentation">
               <RadioGroupItem value="spaces" id="spaces" />
-              <Label htmlFor="spaces" className="text-sm font-normal cursor-pointer leading-one mt-[7px]">
+              <Label htmlFor="spaces" className="text-sm font-normal cursor-pointer leading-one mt-[7px]" style={{ color: '#C5C5C5' }}>
                 Spaces
               </Label>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Use tabs for indentation">
               <RadioGroupItem value="tabs" id="tabs" />
-              <Label htmlFor="tabs" className="text-sm font-normal cursor-pointer leading-one mt-[7px]">
+              <Label htmlFor="tabs" className="text-sm font-normal cursor-pointer leading-one mt-[7px]" style={{ color: '#C5C5C5' }}>
                 Tabs
               </Label>
             </div>
@@ -71,7 +71,7 @@ export const FloatingControls: React.FC = () => {
             value={tabSize.toString()}
             onValueChange={(value) => setTabSize(parseInt(value, 10))}
           >
-            <SelectTrigger id="tabSize" className="w-16 h-9">
+            <SelectTrigger id="tabSize" className="w-16 h-9" title="Number of spaces or tab width">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="min-w-[4rem]">
@@ -83,7 +83,7 @@ export const FloatingControls: React.FC = () => {
           <div className="w-24" />
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Convert SVG id attributes to class attributes">
               <Switch
                 id="idToClass"
                 checked={enableSvgIdToClass}
@@ -93,12 +93,13 @@ export const FloatingControls: React.FC = () => {
               <Label 
                 htmlFor="idToClass" 
                 className="text-sm cursor-pointer leading-one mt-[7px]"
+                style={{ color: '#C5C5C5' }}
               >
                 Id to Class
               </Label>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Automatically copy converted Pug code to clipboard">
               <Switch
                 id="quickCopy"
                 checked={enableQuickCopy}
@@ -108,6 +109,7 @@ export const FloatingControls: React.FC = () => {
               <Label 
                 htmlFor="quickCopy" 
                 className="text-sm cursor-pointer leading-one mt-[7px]"
+                style={{ color: '#C5C5C5' }}
               >
                 Quick Copy
               </Label>
@@ -117,14 +119,14 @@ export const FloatingControls: React.FC = () => {
           <div className="w-24" />
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Enable SVG optimization using SVGO">
               <Switch
                 id="svgoEnabled"
                 checked={isSvgoEnabled}
                 onCheckedChange={setIsSvgoEnabled}
                 aria-label="Toggle SVGO optimization"
               />
-              <Label htmlFor="svgoEnabled" className="text-sm cursor-pointer leading-one mt-[7px]">
+              <Label htmlFor="svgoEnabled" className="text-sm cursor-pointer leading-one mt-[7px]" style={{ color: '#C5C5C5' }}>
                 SVGO
               </Label>
             </div>
@@ -133,9 +135,11 @@ export const FloatingControls: React.FC = () => {
               variant="outline"
               size="sm"
               className="h-9 whitespace-nowrap"
+              style={{ color: '#C5C5C5' }}
               onClick={handleSvgoSettingsClick}
               disabled={!isSvgoEnabled}
               aria-label="Open SVGO settings"
+              title="Configure SVGO optimization plugins and settings"
             >
               <Settings className="w-4 h-4 mr-2" />
               SVGO Settings
@@ -152,6 +156,7 @@ export const FloatingControls: React.FC = () => {
             className="h-9"
             onClick={handleHelpClick}
             aria-label="Show help"
+            title="View keyboard shortcuts and features"
           >
             <HelpCircle className="w-4 h-4" />
           </Button>

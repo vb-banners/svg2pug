@@ -298,7 +298,7 @@ footer {
   border-radius: 8px;
   border: 1px solid #343d4c;
   background: #1f2430;
-  color: #cbccc6;
+  color: #6E7A8F !important;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
@@ -407,7 +407,7 @@ footer {
 
 .floating-controls .setting.controls > label > span,
 .floating-controls .svgo-toggle-control > span {
-  color: #d9d7ce;
+  color: #6E7A8F !important;
   font-size: 14px;
   white-space: nowrap;
   line-height: 1;
@@ -449,7 +449,7 @@ footer {
   background-repeat: no-repeat;
   background-position: right 8px center;
   background-size: 12px;
-  color: #d9d7ce;
+  color: #6E7A8F !important;
   border: 1px solid #343d4c;
   border-radius: 8px;
   padding: 4px 28px 4px 12px;
@@ -494,7 +494,7 @@ footer {
   border-radius: 8px;
   border: 1px solid #343d4c;
   background: #1f2430;
-  color: #cbccc6;
+  color: #6E7A8F !important;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
@@ -599,7 +599,7 @@ footer {
 .floating-controls .svgo-popup__group-heading {
   font-size: 14px;
   font-weight: 600;
-  color: #707a8c;
+  color: #6E7A8F;
   letter-spacing: 0.03em;
 }
 
@@ -623,7 +623,7 @@ footer {
   gap: 12px;
   font-size: 15px;
   font-weight: 500;
-  color: #cbccc6;
+  color: #6E7A8F !important;
   cursor: pointer;
   user-select: none;
 }
@@ -688,7 +688,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #cbccc6;
+  color: #6E7A8F !important;
   font-size: 14px;
 }
 
@@ -829,7 +829,7 @@ footer {
   padding: 10px 12px 10px 18px;
   background: transparent;
   border-right: 1px solid #2c3750;
-  color: #8f9bb8;
+  color: #6E7A8F !important;
   font-size: 13px;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 500;
@@ -1105,7 +1105,7 @@ footer {
 .floating-controls .help-popup__title {
   font-size: 18px;
   font-weight: 600;
-  color: #cbccc6;
+  color: #6E7A8F;
   margin: 0 0 24px 0;
   letter-spacing: 0.01em;
 }
@@ -1124,7 +1124,7 @@ footer {
 .floating-controls .help-popup__group-heading {
   font-size: 14px;
   font-weight: 600;
-  color: #707a8c;
+  color: #6E7A8F;
   letter-spacing: 0.03em;
   margin: 0;
 }
@@ -1140,7 +1140,7 @@ footer {
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  color: #cbccc6;
+  color: #6E7A8F !important;
 }
 
 .floating-controls .help-shortcut kbd {
@@ -1156,7 +1156,7 @@ footer {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #cbccc6;
+  color: #6E7A8F !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -1187,4 +1187,109 @@ footer {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1f2430;
+  border-top: 1px solid #2c3750;
+  color: #6E7A8F;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 14px;
+  line-height: 32px;
+  flex-shrink: 0;
+  height: 32px;
+  user-select: none;
+  z-index: 3;
+  overflow: hidden;
+  padding: 0 24px;
+  position: relative;
+  box-shadow: 0 -1px 0 0 #2c3750;
+}
+
+.status-bar__left,
+.status-bar__right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  height: 26px;
+}
+
+.status-bar__left {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.status-bar__right {
+  flex: 0 0 auto;
+}
+
+.status-bar__item {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+  color: #6E7A8F;
+  transition: color 0.2s ease;
+  cursor: default;
+  height: 32px;
+  padding: 0 8px;
+  line-height: 32px;
+  gap: 6px;
+}
+
+.status-bar__item svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+  vertical-align: middle;
+}
+
+.status-bar__item span {
+  display: inline;
+}
+
+.status-bar__item:hover {
+  color: #cbccc6;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.status-bar__item:hover svg {
+  opacity: 1;
+}
+
+.status-bar__message {
+  color: #f7c65b;
+  font-weight: 500;
+  animation: fadeIn 0.2s ease;
+  position: absolute;
+  left: 0;
+  right: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.status-bar__message svg {
+  opacity: 1;
+}
+
+.status-bar__compression {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent-color);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

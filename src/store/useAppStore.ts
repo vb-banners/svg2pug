@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AppState } from '../types/AppState';
+import { AppState, CursorPosition, SelectionInfo, CompressionStats } from '../types/AppState';
 import { SvgoSettings } from '../types/SvgoSettings';
 import { FileTab, ControlsPosition } from '../types/FileTab';
 import { getDefaultSvgoSettings } from '../svgo-config';
@@ -53,6 +53,15 @@ interface AppStore extends AppState {
   setDraggedTabId: (tabId: string | null) => void;
   setDragOverTabId: (tabId: string | null) => void;
   
+  // Status bar actions
+  setActiveEditor: (editor: 'html' | 'pug' | null) => void;
+  setHtmlCursorPosition: (position: CursorPosition | null) => void;
+  setPugCursorPosition: (position: CursorPosition | null) => void;
+  setHtmlSelectionInfo: (info: SelectionInfo | null) => void;
+  setPugSelectionInfo: (info: SelectionInfo | null) => void;
+  setCompressionStats: (stats: CompressionStats) => void;
+  setStatusMessage: (message: string | null) => void;
+  
   // Computed selectors
   getActiveFile: () => FileTab | null;
 }
@@ -84,6 +93,15 @@ export const useAppStore = create<AppStore>()(
       draggedTabId: null,
       dragOverTabId: null,
       _hasHydrated: false,
+      
+      // Status bar state (transient - not persisted)
+      activeEditor: null,
+      htmlCursorPosition: null,
+      pugCursorPosition: null,
+      htmlSelectionInfo: null,
+      pugSelectionInfo: null,
+      compressionStats: { htmlGzipSize: 0, pugGzipSize: 0 },
+      statusMessage: null,
 
       // Hydration actions
       setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
@@ -244,6 +262,20 @@ export const useAppStore = create<AppStore>()(
       
       setDraggedTabId: (tabId: string | null) => set({ draggedTabId: tabId }),
       setDragOverTabId: (tabId: string | null) => set({ dragOverTabId: tabId }),
+      
+      // Status bar actions
+      setActiveEditor: (editor: 'html' | 'pug' | null) => set({ activeEditor: editor }),
+      setHtmlCursorPosition: (position: CursorPosition | null) => set({ htmlCursorPosition: position }),
+      setPugCursorPosition: (position: CursorPosition | null) => set({ pugCursorPosition: position }),
+      setHtmlSelectionInfo: (info: SelectionInfo | null) => set({ htmlSelectionInfo: info }),
+      setPugSelectionInfo: (info: SelectionInfo | null) => set({ pugSelectionInfo: info }),
+      setCompressionStats: (stats: CompressionStats) => set({ compressionStats: stats }),
+      setStatusMessage: (message: string | null) => {
+        set({ statusMessage: message });
+        if (message) {
+          setTimeout(() => set({ statusMessage: null }), 5000);
+        }
+      },
 
       // Computed selectors
       getActiveFile: () => {

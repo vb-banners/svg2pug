@@ -4,7 +4,8 @@ import { useSplitPane } from '../hooks/useSplitPane';
 import { useAppStore } from '../store/useAppStore';
 import { useConversion } from '../hooks/useConversion';
 import { useQuickCopy } from '../hooks/useQuickCopy';
-import { cn } from '../lib/utils';
+import { useEditorCursor } from '../hooks/useEditorCursor';
+import { useCompressionStats } from '../hooks/useCompressionStats';
 import type * as monaco from 'monaco-editor';
 
 export const EditorPane: React.FC = () => {
@@ -134,6 +135,12 @@ export const EditorPane: React.FC = () => {
   // Enable Quick Copy feature for Pug editor (using state to ensure it updates when editor mounts)
   useQuickCopy(pugEditorInstance, enableQuickCopy);
 
+  // Enable cursor tracking for both editors
+  useEditorCursor(htmlEditorRef.current, pugEditorRef.current);
+
+  // Enable compression stats tracking
+  useCompressionStats(displayHTMLCode, displayJADECode);
+
   useEffect(() => {
     const handleWindowResize = () => {
       if (htmlEditorRef.current) {
@@ -256,10 +263,8 @@ export const EditorPane: React.FC = () => {
 
       {/* Resizer */}
       <div
-        className={cn(
-          'w-1 bg-border hover:bg-primary cursor-col-resize transition-colors',
-          'active:bg-primary'
-        )}
+        className="cursor-col-resize transition-colors hover:!bg-[#FFC94F] active:!bg-[#FFC94F]"
+        style={{ width: '1px', minWidth: '1px', maxWidth: '1px', backgroundColor: '#2F3A4B' }}
         onMouseDown={handleSplitMouseDown}
         role="separator"
         aria-label="Resize editor panes"

@@ -1,6 +1,6 @@
 # HTML to PUG Converter (Beta)
 
-A real-time online converter that transforms HTML code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization.
+A real-time online converter that transforms HTML code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization. Version 0.2.0 introduces a refreshed UI with improved accessibility and modern design.
 
 ## 🌟 Features
 
@@ -8,6 +8,7 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
 - **Bidirectional Conversion**: Instantly convert HTML to PUG and vice versa with live editing in both editors
 - **Multi-File Support**: Open and work with multiple files simultaneously using tabs
 - **Monaco Editor**: Professional code editing experience with VS Code-like features and keyboard shortcuts
+- **Status Bar**: Real-time display of active editor, cursor position, line/character selection, indentation settings, and file compression statistics
 - **Quick Copy Feature**: Multi-select specific elements or lines with Shift+Click for precise copying
 - **Drag & Drop**: Reorder tabs by dragging them to different positions
 - **File Upload**: Upload multiple HTML/SVG files at once using the Upload button
@@ -23,12 +24,16 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
 - **Persistent Preferences**: All settings and open files are saved in local storage
 
 ### Advanced Features
+- **Modern UI Design**:
+  - Cohesive dark theme with accent colors
+  - Smooth hover states on all interactive elements
+  - Comprehensive tooltips for accessibility
 - **SVGO Integration**: 
   - Optional SVG optimization with customizable settings
   - Fine-grained control over 50+ optimization plugins
   - Adjustable precision for numbers and transforms
   - Multipass optimization for maximum compression
-  - Hover hints explaining each plugin's function
+  - Descriptive hover hints explaining each plugin's function
 - **SVG Id to Class Conversion**: Convert SVG `id` attributes to `class` attributes
 - **PUG Size Variables**: Automatically convert width/height to variables when matching viewBox
 - **Smart SVG Processing**:

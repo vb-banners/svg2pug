@@ -86,12 +86,12 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
 
           <section>
             <h3 className="text-lg font-semibold mb-3">About</h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm mb-4" style={{ color: '#C5C5C5' }}>
               HTML to PUG helps you convert HTML snippets to PUG format with optional SVGO optimization for SVG elements.
             </p>
             
             <h4 className="text-sm font-semibold mb-2">Features</h4>
-            <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+            <ul className="list-disc list-inside space-y-1 text-sm" style={{ color: '#C5C5C5' }}>
               <li>Real-time HTML to Pug conversion</li>
               <li>Multi-file support with tabs</li>
               <li>Quick Copy feature with multi-selection (Shift+Click)</li>
