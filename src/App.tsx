@@ -12,6 +12,7 @@ import { usePasteHandler } from './hooks/usePasteHandler';
 import './styles/globals.css';
 
 const App: React.FC = () => {
+  const [scriptsLoaded, setScriptsLoaded] = React.useState(false);
   const _hasHydrated = useAppStore(state => state._hasHydrated);
   const HTMLCode = useAppStore(state => state.HTMLCode);
   const openFiles = useAppStore(state => state.openFiles);
@@ -32,9 +33,49 @@ const App: React.FC = () => {
   
   const { convertHtmlToPug } = useConversion();
 
-  // Wait for store to hydrate from localStorage
-  if (!_hasHydrated) {
-    return null; // or a loading spinner
+  // Wait for external scripts to load (pug.js, html-to-jade.js, he.js)
+  useEffect(() => {
+    const checkScripts = () => {
+      if (window.Html2Jade && window.pug && window.he) {
+        setScriptsLoaded(true);
+        return true;
+      }
+      return false;
+    };
+
+    // Check immediately
+    if (checkScripts()) return;
+
+    // Poll every 50ms for up to 5 seconds
+    const interval = setInterval(() => {
+      if (checkScripts()) {
+        clearInterval(interval);
+      }
+    }, 50);
+
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+      // Load anyway after timeout to show error state
+      setScriptsLoaded(true);
+      console.error('External scripts failed to load within timeout');
+    }, 5000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, []);
+
+  // Wait for store to hydrate from localStorage AND scripts to load
+  if (!_hasHydrated || !scriptsLoaded) {
+    return (
+      <div className="flex items-center justify-center h-screen" style={{ backgroundColor: '#1E2431', color: '#CBCCC6' }}>
+        <div className="text-center">
+          <div className="text-lg mb-2">Loading HTML2PUG...</div>
+          {!scriptsLoaded && <div className="text-sm opacity-70">Loading conversion engines...</div>}
+        </div>
+      </div>
+    );
   }
   
     // Handle conversion for global HTML code (when no tabs are open)
