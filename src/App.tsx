@@ -188,11 +188,21 @@ const App: React.FC = () => {
 
   // Wait for store to hydrate from localStorage AND scripts to load
   if (isLoading) {
+    // If we've been loading for more than 3 seconds and scripts are loaded but hydration is stuck,
+    // force hydration to complete so the user isn't stuck on a loading screen.
+    // This is a safety fallback.
+    if (scriptsLoaded && !_hasHydrated) {
+      setTimeout(() => {
+        useAppStore.getState().setHasHydrated(true);
+      }, 3000);
+    }
+
     return (
       <div className="flex items-center justify-center h-screen" style={{ backgroundColor: '#1E2431', color: '#CBCCC6' }}>
         <div className="text-center">
           <div className="text-lg mb-2">Loading HTML2PUG...</div>
           {!scriptsLoaded && <div className="text-sm opacity-70">Loading conversion engines...</div>}
+          {scriptsLoaded && !_hasHydrated && <div className="text-sm opacity-70">Restoring session...</div>}
         </div>
       </div>
     );

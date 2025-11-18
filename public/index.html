@@ -24,15 +24,34 @@
     }
   </script>
 
-  <script src="%PUBLIC_URL%/pug.js"></script>
-  <script src="%PUBLIC_URL%/he.js"></script>
-  <script src="%PUBLIC_URL%/html-to-jade.js"></script>
+  <script defer src="%PUBLIC_URL%/pug.js"></script>
+  <script defer src="%PUBLIC_URL%/he.js"></script>
+  <script defer src="%PUBLIC_URL%/html-to-jade.js"></script>
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="manifest" href="%PUBLIC_URL%/manifest.json" crossorigin="use-credentials">
   <link rel="icon" type="image/svg+xml" href="%PUBLIC_URL%/favicon.svg">
   <meta name="theme-color" content="#1F242E">
+  <script>
+    // Global error handler for startup issues
+    window.onerror = function(msg, url, line, col, error) {
+      // Ignore ResizeObserver errors
+      if (msg.includes('ResizeObserver loop')) return;
+      
+      // If the app hasn't loaded yet (root is empty), show the error
+      const root = document.getElementById('root');
+      if (root && root.childElementCount === 0) {
+        document.body.innerHTML = '<div style="padding: 20px; color: white; font-family: sans-serif;">' +
+          '<h1>Startup Error</h1>' +
+          '<p>The application failed to start.</p>' +
+          '<pre style="background: #333; padding: 10px; overflow: auto;">' + msg + '\n' + (error ? error.stack : '') + '</pre>' +
+          '<button onclick="window.location.reload(true)" style="padding: 10px 20px; cursor: pointer;">Reload Application</button>' +
+          '</div>';
+        document.body.style.backgroundColor = '#1F242E';
+      }
+    };
+  </script>
   <script>
     // Filter out browser extension errors from console
     (function() {
@@ -48,6 +67,18 @@
     })();
   </script>
   <script>
+    // Aggressively unregister any existing Service Workers to prevent caching issues
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+          console.log('Unregistering Service Worker:', registration);
+          registration.unregister();
+        }
+      }).catch(function(err) {
+        console.error('Service Worker unregistration failed:', err);
+      });
+    }
+
     // Version check to prevent blank screen from cached old versions
     (function() {
       const APP_VERSION = '0.3.0';
@@ -60,7 +91,7 @@
           // New version detected, clear caches and reload
           console.log('New version detected:', savedVersion, '->', APP_VERSION);
           
-          // Clear localStorage except version
+          // Clear localStorage except version and backups
           const keysToPreserve = [];
           for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -74,16 +105,9 @@
           
           localStorage.setItem(STORAGE_KEY, APP_VERSION);
           
-          // Force reload without cache
-          if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(registrations => {
-              registrations.forEach(reg => reg.unregister());
-            });
-          }
-          
           // Reload after clearing
           setTimeout(() => {
-            window.location.reload(true);
+            window.location.reload();
           }, 100);
         } else if (!savedVersion) {
           // First time load
@@ -101,7 +125,14 @@
   <noscript>
     You need to enable JavaScript to run this app.
   </noscript>
-  <div id="root" class="container-fluid"></div>
+  <div id="root" class="container-fluid">
+    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #1E2431; color: #CBCCC6; font-family: sans-serif;">
+      <div style="text-align: center;">
+        <div style="font-size: 1.125rem; margin-bottom: 0.5rem;">Loading HTML2PUG...</div>
+        <div style="font-size: 0.875rem; opacity: 0.7;">Initializing application...</div>
+      </div>
+    </div>
+  </div>
   <div id="ad-script"></div>
 
 </body>

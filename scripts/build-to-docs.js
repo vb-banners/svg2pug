@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 const { spawnSync } = require('child_process');
-const { existsSync, rmSync, renameSync, readdirSync, copyFileSync, mkdirSync } = require('fs');
+const { existsSync, rmSync, renameSync, readdirSync, copyFileSync, mkdirSync, readFileSync, writeFileSync } = require('fs');
 const path = require('path');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -39,6 +39,25 @@ if (!existsSync(buildPath)) {
 }
 
 renameSync(buildPath, docsPath);
+
+// Add cache busting to index.html
+const indexPath = path.join(docsPath, 'index.html');
+if (existsSync(indexPath)) {
+  try {
+    let indexContent = readFileSync(indexPath, 'utf8');
+    const timestamp = Date.now();
+    
+    // Add timestamp to external scripts to force reload on new builds
+    indexContent = indexContent.replace(/src="([^"]*\/)?pug\.js"/g, `src="$1pug.js?v=${timestamp}"`);
+    indexContent = indexContent.replace(/src="([^"]*\/)?he\.js"/g, `src="$1he.js?v=${timestamp}"`);
+    indexContent = indexContent.replace(/src="([^"]*\/)?html-to-jade\.js"/g, `src="$1html-to-jade.js?v=${timestamp}"`);
+    
+    writeFileSync(indexPath, indexContent);
+    console.log('Added cache busting timestamps to index.html');
+  } catch (e) {
+    console.error('Failed to add cache busting to index.html:', e);
+  }
+}
 
 const copyLegacyAssets = (from, to) => {
   if (!existsSync(from)) return;
