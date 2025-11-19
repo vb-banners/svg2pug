@@ -17,7 +17,7 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">HTML to PUG</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">SVG to PUG</DialogTitle>
           <DialogDescription>Keyboard shortcuts and information</DialogDescription>
         </DialogHeader>
         
@@ -87,12 +87,12 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
           <section>
             <h3 className="text-lg font-semibold mb-3">About</h3>
             <p className="text-sm mb-4" style={{ color: '#C5C5C5' }}>
-              HTML to PUG helps you convert HTML snippets to PUG format with optional SVGO optimization for SVG elements.
+              SVG to PUG helps you convert SVG snippets to PUG format with optional SVGO optimization for SVG elements.
             </p>
             
             <h4 className="text-sm font-semibold mb-2">Features</h4>
             <ul className="list-disc list-inside space-y-1 text-sm" style={{ color: '#C5C5C5' }}>
-              <li>Real-time HTML to Pug conversion</li>
+              <li>Real-time SVG to Pug conversion</li>
               <li>Multi-file support with tabs</li>
               <li>Quick Copy feature with multi-selection (Shift+Click)</li>
               <li>SVGO optimization with 40+ configurable plugins</li>

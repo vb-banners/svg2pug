@@ -14,7 +14,8 @@ import { useAppStore } from '../store/useAppStore';
  */
 export const useQuickCopy = (
   editor: monaco.editor.IStandaloneCodeEditor | null,
-  enableQuickCopy: boolean
+  enableQuickCopy: boolean,
+  onCopy?: () => void
 ) => {
   const hoverDisposableRef = useRef<monaco.IDisposable | null>(null);
   const clickDisposableRef = useRef<monaco.IDisposable | null>(null);
@@ -326,6 +327,7 @@ export const useQuickCopy = (
                 const selectionCount = multiSelectionsRef.current.length;
                 const totalLines = normalizedLines.length;
                 useAppStore.getState().setStatusMessage(`Copied ${selectionCount} selection${selectionCount !== 1 ? 's' : ''} (${totalLines} line${totalLines !== 1 ? 's' : ''})`);
+                onCopy?.();
               })
               .catch((err) => {
                 console.error('Failed to copy to clipboard:', err);
@@ -369,6 +371,7 @@ export const useQuickCopy = (
                 
                 // Restore selection after copy
                 currentEditor.setSelection(selection);
+                onCopy?.();
               })
               .catch((err) => {
                 console.error('Failed to copy to clipboard:', err);

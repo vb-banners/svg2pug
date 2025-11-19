@@ -56,7 +56,7 @@ export const StatusBar: React.FC = () => {
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
               <path d="M4.5 11.5A.5.5 0 0 1 5 11h10a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 3 7h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm-2-4A.5.5 0 0 1 1 3h10a.5.5 0 0 1 0 1H1a.5.5 0 0 1-.5-.5z"/>
             </svg>
-            <span>{activeEditor === 'html' ? 'HTML' : 'Pug'}</span>
+            <span>{activeEditor === 'html' ? 'SVG' : 'Pug'}</span>
           </div>
         )}
 
@@ -88,7 +88,7 @@ export const StatusBar: React.FC = () => {
       </div>
 
       {statusMessage && (
-        <div className="status-bar__message" style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '6px', pointerEvents: 'none', color: '#f7c65b' }}>
+        <div className="status-bar__message" style={{ position: 'absolute', left: 0, right: 0, textAlign: 'center', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: '6px', pointerEvents: 'none', color: '#CAFF6C' }}>
           <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
             <path d="M10.97 4.97a.75.75 0 0 1 1.07 1.05l-3.99 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.267.267 0 0 1 .02-.022z"/>
           </svg>
@@ -98,11 +98,11 @@ export const StatusBar: React.FC = () => {
 
       <div className="status-bar__right" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '16px', flex: '1 1 0', minWidth: 0, justifyContent: 'flex-end' }}>
         {compressionStats && compressionStats.htmlGzipSize > 0 && (
-          <div className="status-bar__item" title="HTML gzipped size" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px', color: '#6E7A8F' }}>
+          <div className="status-bar__item" title="SVG gzipped size" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '6px', color: '#6E7A8F' }}>
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
               <path d="M5.854 4.854a.5.5 0 1 0-.708-.708l-3.5 3.5a.5.5 0 0 0 0 .708l3.5 3.5a.5.5 0 0 0 .708-.708L2.707 8l3.147-3.146zm4.292 0a.5.5 0 0 1 .708-.708l3.5 3.5a.5.5 0 0 1 0 .708l-3.5 3.5a.5.5 0 0 1-.708-.708L13.293 8l-3.147-3.146z"/>
             </svg>
-            <span>HTML: {formatBytes(compressionStats.htmlGzipSize)}</span>
+            <span>SVG: {formatBytes(compressionStats.htmlGzipSize)}</span>
           </div>
         )}
 

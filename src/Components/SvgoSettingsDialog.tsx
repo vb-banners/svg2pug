@@ -87,6 +87,7 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
     sortDefsChildren: 'Sort defs children',
     removeOffCanvasPaths: 'Remove off-canvas paths',
     reusePaths: 'Reuse paths',
+    removeSvgElement: 'Remove SVG parent',
   };
 
   const svgoPluginTooltips: { [key: string]: string } = {
@@ -130,6 +131,7 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
     sortDefsChildren: 'Sort children of defs element',
     removeOffCanvasPaths: 'Remove paths that are outside the canvas',
     reusePaths: 'Find and reuse duplicate paths',
+    removeSvgElement: 'Removes the top-level <svg> element and un-indents children',
   };
 
   // Plugin categories
@@ -177,6 +179,20 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
                 style={{ color: '#C5C5C5', marginTop: '6px' }}
               >
                 Size Vars
+              </Label>
+            </div>            <div className="flex items-center space-x-[15px]" title={svgoPluginTooltips['removeSvgElement']}>
+              <Switch
+                id="removeSvgElement"
+                checked={isPluginEnabled('removeSvgElement')}
+                onCheckedChange={(checked) => handlePluginToggle('removeSvgElement', checked)}
+                aria-label="Toggle Remove SVG Parent"
+              />
+              <Label
+                htmlFor="removeSvgElement"
+                className="text-sm font-normal cursor-pointer"
+                style={{ color: '#C5C5C5', marginTop: '6px' }}
+              >
+                {svgoPluginLabels['removeSvgElement']}
               </Label>
             </div>
           </section>

@@ -8,9 +8,9 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <meta name="description" content="HTML2PUG help you convert a HTML snippet to a PUG snippet. Useful for testing out how something would look in PUG vs HTML">
-  <meta property="og:title" content="HTML to PUG Converter">
-  <meta property="og:site_name" content="HTML2PUG">
+  <meta name="description" content="SVG2PUG help you convert a SVG snippet to a PUG snippet. Useful for testing out how something would look in PUG vs SVG">
+  <meta property="og:title" content="SVG to PUG Converter">
+  <meta property="og:site_name" content="SVG2PUG">
   <!-- Signal to password managers: no login forms here -->
   <meta name="1password-ignore" content="true">
   <meta name="bitwarden-ignore" content="true">
@@ -35,9 +35,26 @@
   <meta name="theme-color" content="#1F242E">
   <script>
     // Global error handler for startup issues
+    window.addEventListener('error', function(e) {
+      if (e.message && (
+        e.message.includes('ResizeObserver loop') || 
+        e.message.includes('ResizeObserver loop completed with undelivered notifications') ||
+        e.message.includes('ResizeObserver loop limit exceeded')
+      )) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+    }, { capture: true });
+
     window.onerror = function(msg, url, line, col, error) {
       // Ignore ResizeObserver errors
-      if (msg.includes('ResizeObserver loop')) return;
+      if (typeof msg === 'string' && (
+        msg.includes('ResizeObserver loop') || 
+        msg.includes('ResizeObserver loop completed with undelivered notifications') ||
+        msg.includes('ResizeObserver loop limit exceeded')
+      )) {
+        return true;
+      }
       
       // If the app hasn't loaded yet (root is empty), show the error
       const root = document.getElementById('root');
@@ -53,14 +70,15 @@
     };
   </script>
   <script>
-    // Filter out browser extension errors from console
+    // Filter out browser extension errors and ResizeObserver errors from console
     (function() {
       const originalError = console.error;
       console.error = function(...args) {
         const msg = args.join(' ');
         if (msg.includes('content_script') || 
-            (msg.includes('Cannot read') && msg.includes('control'))) {
-          return; // Silently ignore extension errors
+            (msg.includes('Cannot read') && msg.includes('control')) ||
+            msg.includes('ResizeObserver loop')) {
+          return; // Silently ignore extension errors and ResizeObserver errors
         }
         originalError.apply(console, args);
       };
@@ -81,7 +99,7 @@
 
     // Version check to prevent blank screen from cached old versions
     (function() {
-      const APP_VERSION = '0.3.0';
+      const APP_VERSION = '0.4.0';
       const STORAGE_KEY = 'html2pug_version';
       
       try {
@@ -118,21 +136,14 @@
       }
     })();
   </script>
-  <title>HTML to PUG Online Realtime Converter</title>
+  <title>SVG to PUG Online Realtime Converter</title>
 </head>
 
 <body>
   <noscript>
     You need to enable JavaScript to run this app.
   </noscript>
-  <div id="root" class="container-fluid">
-    <div style="display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #1E2431; color: #CBCCC6; font-family: sans-serif;">
-      <div style="text-align: center;">
-        <div style="font-size: 1.125rem; margin-bottom: 0.5rem;">Loading HTML2PUG...</div>
-        <div style="font-size: 0.875rem; opacity: 0.7;">Initializing application...</div>
-      </div>
-    </div>
-  </div>
+  <div id="root" class="container-fluid"></div>
   <div id="ad-script"></div>
 
 </body>

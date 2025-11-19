@@ -42,16 +42,16 @@ interface SortableTabProps {
   onNewTab: () => void;
 }
 
-const SortableTab: React.FC<SortableTabProps> = ({ 
-  id, 
-  title, 
-  isActive, 
-  onSelect, 
-  onClose, 
-  onDuplicate, 
-  onCloseOthers, 
+const SortableTab: React.FC<SortableTabProps> = ({
+  id,
+  title,
+  isActive,
+  onSelect,
+  onClose,
+  onDuplicate,
+  onCloseOthers,
   onCloseAll,
-  onNewTab 
+  onNewTab
 }) => {
   const {
     attributes,
@@ -87,8 +87,8 @@ const SortableTab: React.FC<SortableTabProps> = ({
             role="tab"
             aria-selected={isActive}
           >
-            <span 
-              className="text-sm truncate max-w-[200px] cursor-pointer" 
+            <span
+              className="text-sm truncate max-w-[200px] cursor-pointer"
               style={{ color: isActive ? '#C5C5C5' : '#6E7A8F' }}
               title={title}
               onClick={onSelect}
@@ -156,10 +156,10 @@ export const TabBar: React.FC = () => {
   const duplicateFile = useAppStore(state => state.duplicateFile);
   const closeOtherFiles = useAppStore(state => state.closeOtherFiles);
   const closeAllFiles = useAppStore(state => state.closeAllFiles);
-  
+
   const { handleTabSwitch, handleTabClose } = useFileTabs();
   const { convertHtmlToPug } = useConversion();
-  
+
   // Scroll active tab into view on mount and when it changes
   React.useEffect(() => {
     if (tabBarRef.current && activeFileId) {
@@ -170,19 +170,19 @@ export const TabBar: React.FC = () => {
           activeTab.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
         }
       }, 100);
-      
+
       return () => clearTimeout(timer);
     }
     return undefined;
   }, [activeFileId]);
-  
+
   // Save scroll position when user scrolls
   const handleScroll = React.useCallback(() => {
     if (tabBarRef.current) {
       setTabBarScrollPosition(tabBarRef.current.scrollLeft);
     }
   }, [setTabBarScrollPosition]);
-  
+
   const handleNewTab = () => {
     const newFile = {
       id: Date.now().toString(),
@@ -215,7 +215,7 @@ export const TabBar: React.FC = () => {
         reader.onload = (event) => {
           const content = event.target?.result as string;
           if (!content) return;
-          
+
           const pugContent = convertHtmlToPug(content, {
             isSvgoEnabled: state.isSvgoEnabled,
             svgoSettings: state.svgoSettings,
@@ -226,17 +226,17 @@ export const TabBar: React.FC = () => {
             tabSize: state.tabSize,
             fileName: file.name
           });
-          
+
           const fileData = {
             id: `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
             name: file.name,
             htmlContent: content,
             pugContent
           };
-          
+
           newFiles.push(fileData);
           processedCount++;
-          
+
           if (processedCount === fileArray.length) {
             addFiles(newFiles);
           }
@@ -247,7 +247,7 @@ export const TabBar: React.FC = () => {
         };
         reader.readAsText(file);
       });
-      
+
       e.target.value = '';
     }
   };
@@ -269,7 +269,7 @@ export const TabBar: React.FC = () => {
     if (over && active.id !== over.id) {
       const oldIndex = openFiles.findIndex((f) => f.id === active.id);
       const newIndex = openFiles.findIndex((f) => f.id === over.id);
-      
+
       if (oldIndex !== -1 && newIndex !== -1) {
         const newOrder = arrayMove(openFiles, oldIndex, newIndex);
         reorderFiles(newOrder.map((f) => f.id));
@@ -285,10 +285,10 @@ export const TabBar: React.FC = () => {
         accept=".html,.htm,.svg"
         multiple
         onChange={handleFileInputChange}
-        className="hidden"
+        style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
         aria-label="Upload HTML files"
       />
-      
+
       <div className="flex items-center h-10 relative" style={{ backgroundColor: '#1E2431', borderBottom: '1px solid #2F3A4B' }}>
         <Button
           variant="ghost"
@@ -301,53 +301,16 @@ export const TabBar: React.FC = () => {
           <Upload className="w-4 h-4 mr-2" />
           Upload
         </Button>
-        
+
         <div className="h-full w-px bg-border shrink-0" />
-        
-        <div 
+
+        <div
           ref={tabBarRef}
-          className="flex items-center overflow-x-auto scrollbar-hide flex-1" 
+          className="flex items-center overflow-x-auto scrollbar-hide flex-1"
           role="tablist"
           onScroll={handleScroll}
         >
-        {openFiles.length === 0 ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleNewTab}
-            className="h-8 ml-2 shrink-0"
-            aria-label="Create new tab"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Tab
-          </Button>
-        ) : (
-          <>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={openFiles.map((f) => f.id)}
-                strategy={horizontalListSortingStrategy}
-              >
-                {openFiles.map((file) => (
-                  <SortableTab
-                    key={file.id}
-                    id={file.id}
-                    title={file.name}
-                    isActive={file.id === activeFileId}
-                    onSelect={() => handleTabSwitch(file.id)}
-                    onClose={() => handleTabClose(file.id)}
-                    onDuplicate={() => duplicateFile(file.id)}
-                    onCloseOthers={() => closeOtherFiles(file.id)}
-                    onCloseAll={closeAllFiles}
-                    onNewTab={handleNewTab}
-                  />
-                ))}
-              </SortableContext>
-            </DndContext>
+          {openFiles.length === 0 ? (
             <Button
               variant="ghost"
               size="sm"
@@ -355,10 +318,47 @@ export const TabBar: React.FC = () => {
               className="h-8 ml-2 shrink-0"
               aria-label="Create new tab"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-4 h-4 mr-2" />
+              New Tab
             </Button>
-          </>
-        )}
+          ) : (
+            <>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={openFiles.map((f) => f.id)}
+                  strategy={horizontalListSortingStrategy}
+                >
+                  {openFiles.map((file) => (
+                    <SortableTab
+                      key={file.id}
+                      id={file.id}
+                      title={file.name}
+                      isActive={file.id === activeFileId}
+                      onSelect={() => handleTabSwitch(file.id)}
+                      onClose={() => handleTabClose(file.id)}
+                      onDuplicate={() => duplicateFile(file.id)}
+                      onCloseOthers={() => closeOtherFiles(file.id)}
+                      onCloseAll={closeAllFiles}
+                      onNewTab={handleNewTab}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNewTab}
+                className="h-8 ml-2 shrink-0"
+                aria-label="Create new tab"
+              >
+                <Plus className="w-4 h-4" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </>

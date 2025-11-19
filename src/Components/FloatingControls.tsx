@@ -18,12 +18,14 @@ export const FloatingControls: React.FC = () => {
   const enableCommonClasses = useAppStore(state => state.enableCommonClasses);
   const enableQuickCopy = useAppStore(state => state.enableQuickCopy);
   const isSvgoEnabled = useAppStore(state => state.isSvgoEnabled);
+  const showPreview = useAppStore(state => state.showPreview);
   
   const setTabSize = useAppStore(state => state.setTabSize);
   const setUseSoftTabs = useAppStore(state => state.setUseSoftTabs);
   const setEnableSvgIdToClass = useAppStore(state => state.setEnableSvgIdToClass);
   const setEnableCommonClasses = useAppStore(state => state.setEnableCommonClasses);
   const setEnableQuickCopy = useAppStore(state => state.setEnableQuickCopy);
+  const setShowPreview = useAppStore(state => state.setShowPreview);
   const setIsSvgoEnabled = useAppStore(state => state.setIsSvgoEnabled);
   const setIsSvgoMenuOpen = useAppStore(state => state.setIsSvgoMenuOpen);
   const setIsHelpMenuOpen = useAppStore(state => state.setIsHelpMenuOpen);
@@ -42,7 +44,7 @@ export const FloatingControls: React.FC = () => {
     <div className="w-full border-b border-border flex items-center gap-4 px-6 py-3" style={{ backgroundColor: '#1E2431' }}>
       {/* Logo */}
       <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold leading-none" style={{ color: '#C5C5C5' }}>HTML to PUG</h1>
+        <h1 className="text-xl font-bold leading-none" style={{ color: '#C5C5C5' }}>SVG to PUG</h1>
         <span className="text-[10px] px-1.5 py-0.5 bg-[#FFD173]/20 text-[#FFD173] rounded-full font-medium uppercase">Beta</span>
       </div>
 
@@ -137,6 +139,22 @@ export const FloatingControls: React.FC = () => {
           <div className="w-24" />
 
           <div className="flex items-center gap-4">
+            <div className="flex items-center space-x-2" title="Show live preview pane">
+              <Switch
+                id="showPreview"
+                checked={showPreview}
+                onCheckedChange={setShowPreview}
+                aria-label="Toggle Live Preview"
+              />
+              <Label 
+                htmlFor="showPreview" 
+                className="text-sm cursor-pointer leading-one mt-[7px]"
+                style={{ color: '#C5C5C5' }}
+              >
+                Preview
+              </Label>
+            </div>
+
             <div className="flex items-center space-x-2" title="Enable SVG optimization using SVGO">
               <Switch
                 id="svgoEnabled"

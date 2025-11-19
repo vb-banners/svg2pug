@@ -257,6 +257,28 @@ export const useConversion = () => {
     return transformed;
   }, []);
 
+  const reorderFillOpacity = useCallback((html: string): string => {
+    if (!html || typeof html !== 'string') return html;
+
+    return html.replace(/<([^>]+)>/g, (match) => {
+      const fillMatch = match.match(/\s+fill=(["'][^"']*["'])/);
+      const fillOpacityMatch = match.match(/\s+fill-opacity=(["'][^"']*["'])/);
+
+      if (fillMatch && fillOpacityMatch) {
+        const fillAttr = fillMatch[0];
+        const fillOpacityAttr = fillOpacityMatch[0];
+
+        // Remove fill-opacity from its current place
+        let newMatch = match.replace(fillOpacityAttr, '');
+
+        // Insert fill-opacity after fill
+        newMatch = newMatch.replace(fillAttr, fillAttr + fillOpacityAttr);
+        return newMatch;
+      }
+      return match;
+    });
+  }, []);
+
   const findHTMLOrBodyTag = useCallback((html: string): boolean => {
     return html.search(/<\/html>|<\/body>/) > -1;
   }, []);
@@ -289,13 +311,15 @@ export const useConversion = () => {
       ? applySvgoOptimizations(processedHtml, options.svgoSettings)
       : processedHtml;
 
-    const isBodyless = !findHTMLOrBodyTag(optimizedHtml);
+    const reorderedHtml = reorderFillOpacity(optimizedHtml);
+
+    const isBodyless = !findHTMLOrBodyTag(reorderedHtml);
     const convertOptions = {
       bodyless: isBodyless,
       donotencode: true
     };
 
-    const html = optimizedHtml.replace(/template/g, 'template_');
+    const html = reorderedHtml.replace(/template/g, 'template_');
     
     let result = '';
     if (window.Html2Jade) {
@@ -336,6 +360,7 @@ export const useConversion = () => {
     options: {
       tabSize: number;
       useSoftTabs: boolean;
+      injectDebugInfo?: boolean;
     }
   ): string => {
     try {
@@ -343,7 +368,32 @@ export const useConversion = () => {
         return '';
       }
 
-      const htmlCode = window.pug.render(pugCode, { pretty: true });
+      const renderOptions: any = { 
+        pretty: true 
+      };
+
+      if (options.injectDebugInfo) {
+        const addLineNumbersPlugin = {
+          postParse: function(ast: any) {
+            function walk(node: any) {
+              if (node.type === 'Tag') {
+                node.attrs.push({
+                  name: 'data-pug-line',
+                  val: '"' + node.line + '"',
+                  mustEscape: false
+                });
+              }
+              if (node.block) walk(node.block);
+              if (node.nodes) node.nodes.forEach(walk);
+            }
+            walk(ast);
+            return ast;
+          }
+        };
+        renderOptions.plugins = [addLineNumbersPlugin];
+      }
+
+      const htmlCode = window.pug.render(pugCode, renderOptions);
 
       let sanitizeHTMLCode = htmlCode.replace(/^\n/, '');
       sanitizeHTMLCode = beautify.html(sanitizeHTMLCode, {

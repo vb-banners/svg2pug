@@ -8,8 +8,8 @@ const SPLIT_RESIZE_TOLERANCE = 14;
 export const useSplitPane = () => {
   const sectionRef = useRef<HTMLElement | null>(null);
   const isResizingRef = useRef(false);
-  
-  const { pugWidthRatio, setPugWidthRatio, setIsResizingSplit } = useAppStore();
+
+  const { pugWidthRatio, setPugWidthRatio, setIsResizingSplit, showPreview } = useAppStore();
 
   const handleSplitMouseDown = useCallback((event: React.MouseEvent) => {
     event.preventDefault();
@@ -34,7 +34,7 @@ export const useSplitPane = () => {
     // Use requestAnimationFrame to throttle resize updates
     rafIdRef.current = requestAnimationFrame(() => {
       if (!sectionRef.current) return;
-      
+
       const sectionRect = sectionRef.current.getBoundingClientRect();
       const sectionWidth = sectionRect.width;
       const mouseX = event.clientX - sectionRect.left;
@@ -79,11 +79,17 @@ export const useSplitPane = () => {
   }, [pugWidthRatio]);
 
   const getHtmlEditorStyle = useCallback(() => {
+    // When preview is hidden, the left section should take full width
+    if (!showPreview) {
+      return {
+        width: '100%'
+      };
+    }
     const htmlWidthRatio = 1 - pugWidthRatio;
     return {
       width: `${htmlWidthRatio * 100}%`
     };
-  }, [pugWidthRatio]);
+  }, [pugWidthRatio, showPreview]);
 
   const getPugEditorStyle = useCallback(() => {
     return {

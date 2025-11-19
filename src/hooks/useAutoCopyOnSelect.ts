@@ -11,7 +11,8 @@ import { useAppStore } from '../store/useAppStore';
  */
 export const useAutoCopyOnSelect = (
   editor: monaco.editor.IStandaloneCodeEditor | null,
-  enableQuickCopy: boolean
+  enableQuickCopy: boolean,
+  onCopy?: () => void
 ) => {
   const mouseUpDisposableRef = useRef<monaco.IDisposable | null>(null);
   const editorRef = useRef(editor);
@@ -62,6 +63,7 @@ export const useAutoCopyOnSelect = (
             useAppStore.getState().setStatusMessage(
               `Copied ${lineCount} line${lineCount !== 1 ? 's' : ''} (${charCount} char${charCount !== 1 ? 's' : ''})`
             );
+            onCopy?.();
           })
           .catch((err) => {
             console.error('Failed to copy to clipboard:', err);

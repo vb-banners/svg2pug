@@ -25,6 +25,9 @@ interface AppStore extends AppState {
   setEnableCommonClasses: (enabled: boolean) => void;
   setEnablePugSizeVars: (enabled: boolean) => void;
   setEnableQuickCopy: (enabled: boolean) => void;
+  setShowPreview: (show: boolean) => void;
+  setPreviewSplitRatio: (ratio: number) => void;
+  setPreviewScale: (scale: number) => void;
   
   // Actions for UI state
   setControlsPosition: (position: ControlsPosition | null) => void;
@@ -86,6 +89,9 @@ export const useAppStore = create<AppStore>()(
       enableCommonClasses: migratedData.enableCommonClasses || false,
       enablePugSizeVars: migratedData.enablePugSizeVars || false,
       enableQuickCopy: migratedData.enableQuickCopy || false,
+      showPreview: migratedData.showPreview || false,
+      previewSplitRatio: 0.5,
+      previewScale: 1,
       controlsPosition: migratedData.controlsPosition || null,
       isControlsDragging: false,
       pugWidthRatio: migratedData.pugWidthRatio || 0.5,
@@ -126,6 +132,9 @@ export const useAppStore = create<AppStore>()(
       setEnableCommonClasses: (enabled: boolean) => set({ enableCommonClasses: enabled }),
       setEnablePugSizeVars: (enabled: boolean) => set({ enablePugSizeVars: enabled }),
       setEnableQuickCopy: (enabled: boolean) => set({ enableQuickCopy: enabled }),
+      setShowPreview: (show: boolean) => set({ showPreview: show }),
+      setPreviewSplitRatio: (ratio: number) => set({ previewSplitRatio: ratio }),
+      setPreviewScale: (scale: number) => set({ previewScale: scale }),
 
       // UI state actions
       setControlsPosition: (position: ControlsPosition | null) => set({ controlsPosition: position }),
@@ -355,6 +364,7 @@ export const useAppStore = create<AppStore>()(
         enableCommonClasses: state.enableCommonClasses,
         enablePugSizeVars: state.enablePugSizeVars,
         enableQuickCopy: state.enableQuickCopy,
+        showPreview: state.showPreview,
         controlsPosition: state.controlsPosition,
         pugWidthRatio: state.pugWidthRatio,
         svgoSettings: state.svgoSettings,

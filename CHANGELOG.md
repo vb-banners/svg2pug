@@ -1,10 +1,27 @@
 # Changelog
 
-All notable changes to the HTML to PUG Converter project will be documented in this file.
+All notable changes to the SVG to PUG Converter project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+
+## [0.4.0] - 2025-11-19
+
+### Added
+- **Live Preview Pane**: New split-pane view showing real-time visual rendering of the SVG/HTML content
+  - Toggle visibility via the "Preview" switch in the toolbar
+  - Updates instantly as you type in either editor
+  - Supports both SVG and HTML rendering
+  - Displays current dimensions of the rendered content
+- **In-Editor Color Highlighting**: Hex color codes in the editor are automatically colored to match their value
+  - Scans editor content for hex color patterns (e.g., `#FF0000`, `#333`)
+  - Applies the actual color to the text of the hex code
+  - Makes it easier to identify colors directly within the code
+- **Rebranding**: Renamed project from "HTML to PUG" to "SVG to PUG" (SVG2PUG)
+  - Updated application title, headers, and dialogs
+  - Updated manifest and package metadata
+  - Replaced favicon with official Pug logo
 
 ## [0.3.0-beta] - 2025-11-17
 

@@ -30,6 +30,9 @@ export interface AppState {
   enableCommonClasses: boolean;
   enablePugSizeVars: boolean;
   enableQuickCopy: boolean;
+  showPreview: boolean;
+  previewSplitRatio: number;
+  previewScale: number;
   
   // UI state
   controlsPosition: ControlsPosition | null;

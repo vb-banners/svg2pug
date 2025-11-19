@@ -1,13 +1,15 @@
-# HTML to PUG Converter (Beta)
+# SVG to PUG Converter (Beta)
 
-A real-time online converter that transforms HTML code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization. Version 0.3.0 introduces Common Classes extraction, enhanced Quick Copy multi-selection, and auto-copy on selection.
+A real-time online converter that transforms SVG code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization. Version 0.4.0 introduces a Live Preview pane, in-editor color highlighting, and completes the rebranding to "SVG to PUG".
 
 ## 🌟 Features
 
 ### Core Functionality
-- **Bidirectional Conversion**: Instantly convert HTML to PUG and vice versa with live editing in both editors
+- **Bidirectional Conversion**: Instantly convert SVG to PUG and vice versa with live editing in both editors
+- **Live Preview Pane**: Real-time visual rendering of your SVG/HTML content as you edit
 - **Multi-File Support**: Open and work with multiple files simultaneously using tabs
 - **Monaco Editor**: Professional code editing experience with VS Code-like features and keyboard shortcuts
+- **In-Editor Color Highlighting**: Hex color codes in the editor are automatically colored to match their value
 - **Status Bar**: Real-time display of active editor, cursor position, line/character selection, indentation settings, and file compression statistics
 - **Quick Copy Feature**: Multi-select specific elements or lines with Shift+Click for precise copying with enhanced selection persistence
 - **Auto-Copy on Selection**: When Quick Copy is disabled, automatically copies selected text to clipboard on mouse release
@@ -22,7 +24,7 @@ A real-time online converter that transforms HTML code into PUG (formerly Jade) 
   - Adjustable tab size (1-6 spaces)
 - **Resizable Interface**:
   - Draggable floating controls
-  - Resizable split panes between editors
+  - Resizable split panes between editors and preview
 - **Persistent Preferences**: All settings and open files are saved in local storage
 
 ### Advanced Features
@@ -84,10 +86,10 @@ This will create an optimized build in the `docs/` folder (configured for GitHub
 ## 📝 Usage
 
 ### Basic Operations
-1. **HTML to PUG**: Type or paste HTML code in the left editor panel - PUG updates instantly
-2. **PUG to HTML**: Edit PUG code in the right editor panel - HTML updates in real-time
-3. **Upload Files**: Click the "Upload" button in the tab bar to select and open multiple HTML/SVG files
-4. **Paste Files**: Copy HTML/SVG files from Finder (<kbd>⌘</kbd><kbd>C</kbd>) and paste (<kbd>⌘</kbd><kbd>V</kbd>) directly into the app
+1. **SVG to PUG**: Type or paste SVG code in the left editor panel - PUG updates instantly
+2. **PUG to SVG**: Edit PUG code in the right editor panel - SVG updates in real-time
+3. **Upload Files**: Click the "Upload" button in the tab bar to select and open multiple SVG files
+4. **Paste Files**: Copy SVG files from Finder (<kbd>⌘</kbd><kbd>C</kbd>) and paste (<kbd>⌘</kbd><kbd>V</kbd>) directly into the app
    - When no tabs are open: Creates new tabs for each pasted file
    - When pasting into a blank tab: Replaces the tab content and renames it
 5. **Quick Copy**: Use <kbd>⌘</kbd><kbd>⇧</kbd><kbd>C</kbd> to toggle Quick Copy mode, then Shift+Click to select multiple lines or elements
@@ -104,6 +106,7 @@ Use the floating controls to customize your experience:
 - **Tab Size**: Choose indentation size (1-6 spaces)
 - **Id to Class**: Convert SVG `id` attributes to `class` attributes
 - **Common Classes**: Extract common class prefixes from similar class names
+- **Preview**: Toggle the live preview pane visibility
 - **SVGO**: Enable/disable SVG optimization with detailed plugin configuration
 - **Resize Panes**: Drag the divider between editors to adjust the view
 - **Move Controls**: Drag the floating controls panel to your preferred position
@@ -131,7 +134,7 @@ All toggles feature helpful hover hints explaining their function.
 - **Monaco Editor** - VS Code's code editor with advanced features
 - **Zustand** - State management with localStorage persistence
 - **Pug** - Template engine for PUG to HTML conversion
-- **html-to-jade** - HTML to PUG conversion library
+- **html-to-jade** - SVG to PUG conversion library
 - **SVGO** - SVG optimization library
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - High-quality React components
@@ -142,7 +145,7 @@ All toggles feature helpful hover hints explaining their function.
 ```
 html2pug/
 ├── public/           # Static assets and HTML template
-│   ├── html-to-jade.js  # HTML to PUG conversion
+│   ├── html-to-jade.js  # SVG to PUG conversion
 │   ├── pug.js           # PUG to HTML conversion
 │   └── he.js            # HTML entity encoding
 ├── src/              # TypeScript/React source code
@@ -181,7 +184,7 @@ This project is open source and available under the MIT License.
 ## 🙏 Acknowledgments
 
 This project is based on and inspired by:
-- [dvamvo/html2pug](https://github.com/dvamvo/html2pug) - HTML to PUG converter
+- [dvamvo/html2pug](https://github.com/dvamvo/html2pug) - SVG to PUG converter
 - [jakearchibald/svgomg](https://github.com/jakearchibald/svgomg) - SVGO's Missing GUI
 - [svg/svgo](https://github.com/svg/svgo) - SVG Optimizer
 

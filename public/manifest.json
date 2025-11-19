@@ -1,11 +1,11 @@
 {
-  "short_name": "HTML2PUG",
-  "name": "HTML to PUG Converter",
+  "short_name": "SVG2PUG",
+  "name": "SVG to PUG Converter",
   "icons": [
     {
-      "src": "favicon.ico",
-      "sizes": "64x64 32x32 24x24 16x16",
-      "type": "image/x-icon"
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
     }
   ],
   "start_url": "./index.html",
