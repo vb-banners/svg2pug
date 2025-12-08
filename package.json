@@ -1,6 +1,6 @@
 {
   "name": "SVG2PUG",
-  "version": "0.4.6",
+  "version": "0.4.14",
   "private": true,
   "homepage": ".",
   "dependencies": {

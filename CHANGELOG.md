@@ -6,6 +6,78 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.14] - 2025-12-08
+
+### Fixed
+- **Zero-Flash HTML Preview**: Completely eliminated resize flash for HTML content on page load
+  - HTML content now uses pure CSS (`width: 100%`, `height: 100%`) instead of JavaScript measurements
+  - Split rendering into two paths: SVG (calculated dimensions + scaling) and HTML (CSS-based fill)
+  - Zoom controls are now disabled for HTML content since scaling doesn't apply
+  - No more dependency on `containerSize` state for initial HTML render
+
+## [0.4.13] - 2025-12-08
+
+### Fixed
+- **Instant Preview Load**: Eliminated brief resize flash when loading preview
+  - Content type detection (SVG vs HTML) now happens synchronously via `useMemo` during render
+  - SVG dimensions are extracted immediately before first paint
+  - Removed duplicate async dimension parsing effect
+  - Preview now renders correctly on first frame without layout shift
+
+## [0.4.12] - 2025-12-08
+
+### Fixed
+- **Preview Stability for HTML**: Fixed resize loop glitch when previewing non-SVG HTML content
+  - Added `isSvgContent` state to explicitly track content type
+  - Disabled auto-fit/zoom for HTML content - always renders at 100% scale
+  - Stopped responding to iframe size messages for HTML content (width=0)
+  - HTML content now fills the entire preview container without resizing glitches
+  - SVG content continues to use auto-fit with proper zoom controls
+
+## [0.4.11] - 2025-12-08
+
+### Fixed
+- **Preview Stability**: Further improved preview stability and error handling
+  - Wrapped preview script in IIFE to prevent scope pollution
+  - Removed comments from critical script sections to avoid potential parsing issues
+  - Increased layout buffer from 2px to 16px to better handle scrollbar appearance
+  - Added debounce (100ms) to `ResizeObserver` reporting to prevent rapid-fire resize loops
+
+## [0.4.10] - 2025-12-08
+
+### Fixed
+- **Preview Stability**: Fixed persistent resize loop and syntax errors in preview pane
+  - Rewrote preview script to use ES5 syntax (var, function) to ensure compatibility and prevent syntax errors
+  - Added `scrolling="no"` to iframe to prevent scrollbar-induced resize loops
+  - Implemented debounce logic in `reportSize` to only notify parent when dimensions actually change
+  - Added robust cleanup for `<!DOCTYPE>` and XML declarations to prevent invalid HTML structure in preview
+
+## [0.4.9] - 2025-12-08
+
+### Fixed
+- **Preview Crash**: Fixed syntax error in preview pane script that caused the preview to malfunction
+  - Removed incompatible `try/catch` block from `srcDoc` script
+  - Ensured error suppression logic works correctly without syntax errors
+- **Resize Loop**: Fixed infinite resize loop when previewing HTML content
+  - Added 2px buffer to iframe width calculation to prevent scrollbar thrashing
+  - Stabilized layout for non-SVG content
+
+## [0.4.8] - 2025-12-08
+
+### Fixed
+- **Preview Jitter**: Fixed visual jitter and lag when resizing the preview pane
+  - Implemented synchronous scale calculation during render phase instead of effect-based updates
+  - Eliminated 1-frame lag between container resize and content scaling
+  - Improved `srcDoc` script error handling to prevent console noise
+
+## [0.4.7] - 2025-12-08
+
+### Fixed
+- **Preview Glitch**: Fixed layout thrashing and glitching when previewing non-SVG (HTML) content
+  - Implemented content type detection to distinguish between SVG and HTML
+  - Applied specific layout styles: Flex/Center for SVG, Block/Wrap for HTML
+  - Disabled auto-fit width expansion for HTML content to ensure proper text wrapping
+
 ## [0.4.6] - 2025-12-08
 
 ### Added

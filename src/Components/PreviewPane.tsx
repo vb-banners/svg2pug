@@ -22,13 +22,74 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     if (originalHtml && originalHtml.trim().length > 0) return originalHtml;
     return '';
   }, [htmlContent, originalHtml]);
+
+  // Detect SVG content and extract dimensions synchronously during render
+  // This prevents the brief resize flash on page load
+  const { isSvgContent: detectedIsSvg, svgWidth, svgHeight } = useMemo(() => {
+    if (!effectiveContent) return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
+    
+    const extractDimensionsFromSvg = (svg: Element) => {
+      let w = 0;
+      let h = 0;
+      
+      const widthAttr = svg.getAttribute('width');
+      const heightAttr = svg.getAttribute('height');
+      const viewBox = svg.getAttribute('viewBox');
+
+      if (viewBox) {
+        const parts = viewBox.split(/[\s,]+/).filter(Boolean).map(parseFloat);
+        if (parts.length === 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
+          w = parts[2];
+          h = parts[3];
+        }
+      }
+      
+      if (!w && widthAttr && !widthAttr.endsWith('%')) {
+        w = parseFloat(widthAttr);
+      }
+      if (!h && heightAttr && !heightAttr.endsWith('%')) {
+        h = parseFloat(heightAttr);
+      }
+      
+      return { width: w, height: h };
+    };
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(effectiveContent, 'text/html');
+    let svg = doc.querySelector('svg');
+    
+    if (!svg && originalHtml) {
+      const originalDoc = parser.parseFromString(originalHtml, 'text/html');
+      svg = originalDoc.querySelector('svg');
+    }
+    
+    if (svg) {
+      const dims = extractDimensionsFromSvg(svg);
+      if (dims.width > 0 && dims.height > 0) {
+        return { isSvgContent: true, svgWidth: dims.width, svgHeight: dims.height };
+      }
+    }
+    
+    return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
+  }, [effectiveContent, originalHtml]);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const gestureStartScaleRef = useRef<number>(1);
-  const [contentHeight, setContentHeight] = useState(0);
-  const [contentWidth, setContentWidth] = useState(0);
+  const [contentHeight, setContentHeight] = useState(svgHeight);
+  const [contentWidth, setContentWidth] = useState(svgWidth);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isFitMode, setIsFitMode] = useState(true);
+  const [isSvgContent, setIsSvgContent] = useState(detectedIsSvg);
+  
+  // Keep isSvgContent in sync with detected value
+  useEffect(() => {
+    setIsSvgContent(detectedIsSvg);
+    if (detectedIsSvg) {
+      setContentWidth(svgWidth);
+      setContentHeight(svgHeight);
+    }
+  }, [detectedIsSvg, svgWidth, svgHeight]);
 
   // Send highlight message to iframe
   useEffect(() => {
@@ -47,96 +108,40 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     setContentWidth(0);
     setContentHeight(0);
     setIsFitMode(true);
+    setIsSvgContent(false);
   }, [fileId, setPreviewScale]);
 
-  // Auto-fit logic
+  // Calculate scale synchronously for Fit Mode to avoid render lag
+  // Only apply fit mode for SVG content - HTML should always be 100%
+  let effectiveScale = previewScale;
+  if (isSvgContent && isFitMode && contentWidth > 0 && contentHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
+    const padding = 32;
+    const availableWidth = Math.max(0, containerSize.width - padding);
+    const availableHeight = Math.max(0, containerSize.height - padding);
+    
+    const scaleX = availableWidth / contentWidth;
+    const scaleY = availableHeight / contentHeight;
+    const fitScale = Math.min(scaleX, scaleY, 1);
+    
+    effectiveScale = Math.max(0.1, Math.floor(fitScale * 100) / 100);
+  } else if (!isSvgContent) {
+    // For non-SVG content, always use 100% scale
+    effectiveScale = 1;
+  }
+
+  // Sync store with effective scale (only for SVG content)
   useEffect(() => {
-    if (isFitMode && contentWidth > 0 && contentHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
-      const padding = 32; // Padding for better aesthetics
-      const availableWidth = Math.max(0, containerSize.width - padding);
-      const availableHeight = Math.max(0, containerSize.height - padding);
-      
-      const scaleX = availableWidth / contentWidth;
-      const scaleY = availableHeight / contentHeight;
-      const fitScale = Math.min(scaleX, scaleY, 1); // Only scale down or stay at 100%
-      
-      // Round to 2 decimal places to avoid jitter
-      const roundedScale = Math.floor(fitScale * 100) / 100;
-      // Ensure we don't scale down ridiculously small
-      const finalScale = Math.max(0.1, roundedScale);
-      
-      if (finalScale !== previewScale) {
-        setPreviewScale(finalScale);
-      }
+    if (isSvgContent && isFitMode && effectiveScale !== previewScale) {
+      setPreviewScale(effectiveScale);
     }
-  }, [isFitMode, contentWidth, contentHeight, containerSize, previewScale, setPreviewScale]);
+  }, [isSvgContent, isFitMode, effectiveScale, previewScale, setPreviewScale]);
 
-  // Parse SVG dimensions directly from content
+  // Notify parent of content size changes (for SVG)
   useEffect(() => {
-    if (!effectiveContent) return;
-
-    const extractDimensionsFromSvg = (svg: Element) => {
-        let w = 0;
-        let h = 0;
-        
-        const widthAttr = svg.getAttribute('width');
-        const heightAttr = svg.getAttribute('height');
-        const viewBox = svg.getAttribute('viewBox');
-
-        // Priority 1: ViewBox
-        if (viewBox) {
-            const parts = viewBox.split(/[\s,]+/).filter(Boolean).map(parseFloat);
-            if (parts.length === 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
-                w = parts[2];
-                h = parts[3];
-            }
-        }
-        
-        // Priority 2: Width attribute (if not set by viewBox)
-        if (!w && widthAttr) {
-            if (!widthAttr.endsWith('%')) {
-                w = parseFloat(widthAttr);
-            }
-        }
-        
-        // Priority 2: Height attribute (if not set by viewBox)
-        if (!h && heightAttr) {
-            if (!heightAttr.endsWith('%')) {
-                h = parseFloat(heightAttr);
-            }
-        }
-        
-        if (w > 0 && h > 0) return { width: w, height: h };
-        return null;
-    };
-
-    const extractSvgDimensions = (content: string) => {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(content, 'text/html');
-        const svg = doc.querySelector('svg');
-        
-        if (!svg) {
-            // If no SVG found in content (e.g. stripped), try originalHtml
-            if (originalHtml) {
-                const originalDoc = parser.parseFromString(originalHtml, 'text/html');
-                const originalSvg = originalDoc.querySelector('svg');
-                if (originalSvg) {
-                    return extractDimensionsFromSvg(originalSvg);
-                }
-            }
-            return null;
-        }
-        
-        return extractDimensionsFromSvg(svg);
-    };
-
-    const dims = extractSvgDimensions(effectiveContent);
-    if (dims) {
-        setContentWidth(dims.width);
-        setContentHeight(dims.height);
-        onContentSizeChange?.(dims.width, dims.height);
+    if (detectedIsSvg && svgWidth > 0 && svgHeight > 0) {
+      onContentSizeChange?.(svgWidth, svgHeight);
     }
-  }, [effectiveContent, onContentSizeChange, originalHtml]);
+  }, [detectedIsSvg, svgWidth, svgHeight, onContentSizeChange]);
 
   // Constants
   const MIN_SCALE = 0.1;
@@ -178,12 +183,20 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
               font-family: "Plus Jakarta Sans", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
               color: #D9D7CE;
               background-color: transparent; /* Allow checkerboard to show through */
-              display: flex;
-              justify-content: center;
-              align-items: center;
               min-height: 100vh;
               width: fit-content;
               min-width: 100%;
+            }
+            body.is-svg-only {
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            }
+            body.is-html-content {
+              display: block;
+              width: 100%;
+              padding: 16px;
+              box-sizing: border-box;
             }
             /* Default SVG styles to prevent collapse/explosion */
             svg {
@@ -198,71 +211,80 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
             * { box-sizing: border-box; }
           </style>
           <script>
-            // Suppress ResizeObserver errors inside iframe
-            const resizeObserverLoopErr = 'ResizeObserver loop completed with undelivered notifications';
-            const resizeObserverLoopErr2 = 'ResizeObserver loop limit exceeded';
-            
-            window.addEventListener('error', (e) => {
-              if (
-                e.message.includes(resizeObserverLoopErr) ||
-                e.message.includes(resizeObserverLoopErr2)
-              ) {
-                e.stopImmediatePropagation();
-                e.preventDefault();
-              }
-            }, { capture: true });
-            
-            window.onerror = (message) => {
-              const msg = typeof message === 'string' ? message : '';
-              if (
-                msg.includes(resizeObserverLoopErr) ||
-                msg.includes(resizeObserverLoopErr2)
-              ) {
-                return true;
-              }
-              return false;
-            };
+            (function() {
+              var resizeObserverLoopErr = 'ResizeObserver loop completed with undelivered notifications';
+              var resizeObserverLoopErr2 = 'ResizeObserver loop limit exceeded';
+              
+              window.addEventListener('error', function(e) {
+                if (e.message && (
+                  e.message.indexOf(resizeObserverLoopErr) >= 0 ||
+                  e.message.indexOf(resizeObserverLoopErr2) >= 0
+                )) {
+                  e.stopImmediatePropagation();
+                  e.preventDefault();
+                }
+              }, { capture: true });
+              
+              window.onerror = function(message) {
+                var msg = typeof message === 'string' ? message : '';
+                if (
+                  msg.indexOf(resizeObserverLoopErr) >= 0 ||
+                  msg.indexOf(resizeObserverLoopErr2) >= 0
+                ) {
+                  return true;
+                }
+                return false;
+              };
+            })();
 
-            window.addEventListener('DOMContentLoaded', () => {
+            window.addEventListener('DOMContentLoaded', function() {
               // 1. Clean up XML/DOCTYPE text nodes that might have rendered
-              const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-              const nodesToRemove = [];
+              var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
+              var nodesToRemove = [];
               while (walker.nextNode()) {
-                const node = walker.currentNode;
+                var node = walker.currentNode;
                 if (node.nodeValue && (
                   node.nodeValue.trim().startsWith('?xml') || 
                   node.nodeValue.trim().startsWith('<!DOCTYPE') ||
-                  node.nodeValue.includes('xml version=')
+                  node.nodeValue.indexOf('xml version=') >= 0
                 )) {
                   nodesToRemove.push(node);
                 }
               }
-              nodesToRemove.forEach(n => n.remove());
+              nodesToRemove.forEach(function(n) { n.remove(); });
+
+              // Detect content type
+              var isSvgOnly = document.body.children.length === 1 && document.body.children[0].tagName.toLowerCase() === 'svg';
+              if (isSvgOnly) {
+                document.body.classList.add('is-svg-only');
+              } else {
+                document.body.classList.add('is-html-content');
+              }
 
               // 2. Fix SVG sizing and alignment
-              const svg = document.querySelector('svg');
+              var svg = document.querySelector('svg');
               if (svg) {
                 // Remove explicit width/height attributes ONLY if they are percentage-based
                 // This allows us to fall back to viewBox or preserve pixel values
-                let hasWidth = svg.hasAttribute('width');
-                let hasHeight = svg.hasAttribute('height');
+                var hasWidth = svg.hasAttribute('width');
+                var hasHeight = svg.hasAttribute('height');
                 
-                if (hasWidth && svg.getAttribute('width').includes('%')) {
+                if (hasWidth && svg.getAttribute('width').indexOf('%') >= 0) {
                    svg.removeAttribute('width');
                    hasWidth = false;
                 }
-                if (hasHeight && svg.getAttribute('height').includes('%')) {
+                if (hasHeight && svg.getAttribute('height').indexOf('%') >= 0) {
                    svg.removeAttribute('height');
                    hasHeight = false;
                 }
 
                 // Ensure style.width/height are set if attributes exist (for reportSize)
                 if (hasWidth) {
-                   const w = svg.getAttribute('width');
+                   var w = svg.getAttribute('width');
                    if (w) svg.style.width = w.match(/^\d+(\.\d+)?$/) ? w + 'px' : w;
                 }
                 if (hasHeight) {
-                   const h = svg.getAttribute('height');
+                   var h = svg.getAttribute('height');
                    if (h) svg.style.height = h.match(/^\d+(\.\d+)?$/) ? h + 'px' : h;
                 }
                 
@@ -271,10 +293,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
 
                 // Set intrinsic size based on viewBox if dimensions are missing
                 if (svg.hasAttribute('viewBox')) {
-                  const viewBox = svg.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
+                  var viewBox = svg.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
                   if (viewBox.length === 4) {
-                    const width = parseFloat(viewBox[2]);
-                    const height = parseFloat(viewBox[3]);
+                    var width = parseFloat(viewBox[2]);
+                    var height = parseFloat(viewBox[3]);
                     
                     if (!hasWidth && !isNaN(width)) {
                       svg.setAttribute('width', width);
@@ -295,15 +317,19 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
               }
 
               // Report size changes
-              const reportSize = () => {
-                 let width = 0;
-                 let height = 0;
+              var lastWidth = 0;
+              var lastHeight = 0;
+              var reportTimeout;
+              
+              var reportSize = function() {
+                 var width = 0;
+                 var height = 0;
                  
-                 const svgEl = document.querySelector('svg');
+                 var svgEl = document.querySelector('svg');
                  if (svgEl) {
                     // Priority 1: ViewBox
                     if (svgEl.hasAttribute('viewBox')) {
-                         const viewBox = svgEl.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
+                         var viewBox = svgEl.getAttribute('viewBox').split(/[\s,]+/).filter(Boolean);
                          if (viewBox.length === 4) {
                              width = parseFloat(viewBox[2]);
                              height = parseFloat(viewBox[3]);
@@ -321,7 +347,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                     // Priority 3: Width/Height attributes (only if not set)
                     if (!width || width <= 0) {
                         if (svgEl.hasAttribute('width')) {
-                            const w = svgEl.getAttribute('width');
+                            var w = svgEl.getAttribute('width');
                             if (w) {
                                 if (w.match(/^\d+(\.\d+)?$/)) width = parseFloat(w);
                                 else if (w.endsWith('px')) width = parseFloat(w);
@@ -330,7 +356,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                     }
                     if (!height || height <= 0) {
                         if (svgEl.hasAttribute('height')) {
-                            const h = svgEl.getAttribute('height');
+                            var h = svgEl.getAttribute('height');
                             if (h) {
                                 if (h.match(/^\d+(\.\d+)?$/)) height = parseFloat(h);
                                 else if (h.endsWith('px')) height = parseFloat(h);
@@ -340,34 +366,39 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                     
                     // Fallback: Measured dimensions
                     if (!width || width <= 0) {
-                        const rect = svgEl.getBoundingClientRect();
+                        var rect = svgEl.getBoundingClientRect();
                         if (rect.width > 0) width = rect.width;
                     }
                     if (!height || height <= 0) {
-                         const rect = svgEl.getBoundingClientRect();
+                         var rect = svgEl.getBoundingClientRect();
                          if (rect.height > 0) height = rect.height;
                          else height = document.body.scrollHeight;
                     }
 
                  } else {
                     // For non-SVG content (HTML)
-                    const scrollWidth = document.body.scrollWidth;
-                    const scrollHeight = document.body.scrollHeight;
+                    var scrollWidth = document.body.scrollWidth;
+                    var scrollHeight = document.body.scrollHeight;
                     
                     height = scrollHeight;
                     
-                    // Only report width if it exceeds the viewport (meaning it needs more space)
-                    // Otherwise report 0 to let the container dictate width (responsive behavior)
-                    if (scrollWidth > window.innerWidth) {
-                        width = scrollWidth;
-                    }
+                    // For HTML content, we generally want it to wrap and be responsive.
+                    // Reporting a width > innerWidth causes the iframe to expand, preventing wrapping.
+                    // So we force width to 0 (use container width) unless it's SVG.
+                    width = 0;
                  }
                  
-                 window.parent.postMessage({ type: 'preview-size', width, height }, '*');
+                 // Only report if changed significantly
+                 if (Math.abs(width - lastWidth) > 1 || Math.abs(height - lastHeight) > 1) {
+                    lastWidth = width;
+                    lastHeight = height;
+                    window.parent.postMessage({ type: 'preview-size', width: width, height: height }, '*');
+                 }
               };
 
-              const resizeObserver = new ResizeObserver(() => {
-                setTimeout(reportSize, 0);
+              var resizeObserver = new ResizeObserver(function() {
+                if (reportTimeout) clearTimeout(reportTimeout);
+                reportTimeout = setTimeout(reportSize, 100);
               });
               resizeObserver.observe(document.body);
               if (svg) resizeObserver.observe(svg);
@@ -377,7 +408,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
             });
 
             // Handle zoom via Ctrl/Cmd + Wheel (Pinch) inside iframe
-            window.addEventListener('wheel', (e) => {
+            window.addEventListener('wheel', function(e) {
               if (e.ctrlKey || e.metaKey) {
                 e.preventDefault();
                 window.parent.postMessage({
@@ -412,13 +443,13 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
             });
 
             // Handle highlight message
-            window.addEventListener('message', (e) => {
+            window.addEventListener('message', function(e) {
               if (e.data.type === 'highlight-lines') {
-                const lines = e.data.lines || [];
-                const isCopied = e.data.isCopied || false;
+                var lines = e.data.lines || [];
+                var isCopied = e.data.isCopied || false;
                 
                 // Remove previous highlights
-                document.querySelectorAll('.pug-highlight').forEach(el => {
+                document.querySelectorAll('.pug-highlight').forEach(function(el) {
                   el.classList.remove('pug-highlight');
                   el.style.outline = '';
                   el.style.outlineOffset = '';
@@ -427,13 +458,13 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                 });
                 
                 if (Array.isArray(lines) && lines.length > 0) {
-                  const outlineColor = isCopied ? '#CAFF6C' : '#FFC94F';
-                  const bgColor = isCopied ? 'rgba(202, 255, 108, 0.2)' : 'rgba(255, 201, 79, 0.2)';
+                  var outlineColor = isCopied ? '#CAFF6C' : '#FFC94F';
+                  var bgColor = isCopied ? 'rgba(202, 255, 108, 0.2)' : 'rgba(255, 201, 79, 0.2)';
                   
-                  lines.forEach(line => {
+                  lines.forEach(function(line) {
                     // Try to find exact match or closest parent
                     // Since Pug lines map to elements, we look for data-pug-line
-                    const el = document.querySelector(\`[data-pug-line="\${line}"]\`);
+                    var el = document.querySelector(\`[data-pug-line="\${line}"]\`);
                     if (el) {
                       el.classList.add('pug-highlight');
                       el.style.transition = 'all 0.2s ease';
@@ -501,12 +532,18 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           });
         }
       } else if (event.data?.type === 'preview-size') {
-        setContentHeight(event.data.height);
-        setContentWidth(event.data.width);
-        onContentSizeChange?.(event.data.width, event.data.height);
+        // Only update dimensions from iframe for SVG content
+        // For HTML content, we ignore size reports to prevent resize loops
+        if (event.data.width > 0) {
+          setContentHeight(event.data.height);
+          setContentWidth(event.data.width);
+          onContentSizeChange?.(event.data.width, event.data.height);
+        }
       } else if (event.data?.type === 'preview-height') {
-        // Legacy support or fallback
-        setContentHeight(event.data.height);
+        // Legacy support or fallback - only for SVG
+        if (isSvgContent) {
+          setContentHeight(event.data.height);
+        }
       } else if (event.data?.type === 'preview-gesture-start') {
         gestureStartScaleRef.current = previewScaleRef.current;
         setIsFitMode(false);
@@ -579,7 +616,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
 
   const handleZoomIn = () => {
     setIsFitMode(false);
-    const current = previewScale;
+    const current = effectiveScale;
     // Find next level that is significantly larger than current (to avoid floating point issues)
     const next = ZOOM_LEVELS.find(l => l > current + 0.01) || ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
     setPreviewScale(next);
@@ -587,24 +624,34 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
 
   const handleZoomOut = () => {
     setIsFitMode(false);
-    const current = previewScale;
+    const current = effectiveScale;
     // Find prev level
     const prev = [...ZOOM_LEVELS].reverse().find(l => l < current - 0.01) || ZOOM_LEVELS[0];
     setPreviewScale(prev);
   };
 
-  const displayPercentage = Math.round(previewScale * 100);
+  const displayPercentage = Math.round(effectiveScale * 100);
 
   // Calculate dimensions
-  // Base width is the container width minus some padding (e.g. 64px)
-  // But we want it to fill the container if possible.
-  // If contentWidth is reported (e.g. from SVG intrinsic size), use it.
-  // Otherwise fallback to container width (responsive behavior).
-  const baseWidth = contentWidth > 0 ? contentWidth : Math.max(320, containerSize.width);
-  const baseHeight = Math.max(100, contentHeight);
+  // For SVG: use intrinsic dimensions from SVG
+  // For HTML: use 100% of container via CSS (no JS measurements needed)
+  const isSvgWithDimensions = isSvgContent && contentWidth > 0 && contentHeight > 0;
+  
+  let baseWidth: number;
+  let baseHeight: number;
+  
+  if (isSvgWithDimensions) {
+    // SVG content - use intrinsic dimensions
+    baseWidth = contentWidth;
+    baseHeight = contentHeight;
+  } else {
+    // HTML content - we'll use CSS 100% instead
+    baseWidth = 0;
+    baseHeight = 0;
+  }
 
-  const scaledWidth = baseWidth * previewScale;
-  const scaledHeight = baseHeight * previewScale;
+  const scaledWidth = isSvgWithDimensions ? baseWidth * effectiveScale : 0;
+  const scaledHeight = isSvgWithDimensions ? baseHeight * effectiveScale : 0;
 
   return (
     <div className="flex flex-col h-full bg-[#1E2431] border-r border-border overflow-hidden">
@@ -614,12 +661,12 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           {fileName || 'Untitled'}
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomOut} title="Zoom Out">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomOut} title="Zoom Out" disabled={!isSvgWithDimensions}>
             <ZoomOut className="h-3 w-3" />
           </Button>
-          <Select value={isFitMode ? 'fit' : previewScale.toString()} onValueChange={handleScaleChange}>
+          <Select value={isFitMode ? 'fit' : effectiveScale.toString()} onValueChange={handleScaleChange} disabled={!isSvgWithDimensions}>
             <SelectTrigger className="h-6 w-[80px] text-xs border-none bg-transparent hover:bg-primary/10 hover:text-primary focus:ring-0 transition-colors justify-center">
-              <span>{isFitMode ? 'Fit' : `${displayPercentage}%`}</span>
+              <span>{isSvgWithDimensions ? (isFitMode ? 'Fit' : `${displayPercentage}%`) : '100%'}</span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="fit">Fit to View</SelectItem>
@@ -633,10 +680,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
               <SelectItem value="3">300%</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomIn} title="Zoom In">
+          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomIn} title="Zoom In" disabled={!isSvgWithDimensions}>
             <ZoomIn className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={handleResetZoom} title="Reset Zoom">
+          <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={handleResetZoom} title="Reset Zoom" disabled={!isSvgWithDimensions}>
             <RotateCcw className="h-3 w-3" />
           </Button>
         </div>
@@ -657,37 +704,68 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           if (target.scrollTop < 0) target.scrollTop = 0;
         }}
       >
-        {/* Content Wrapper (Checkerboard) */}
-        <div
-          style={{
-            width: scaledWidth,
-            height: scaledHeight,
-            ...checkerboardStyle,
-            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
-            transformOrigin: '0 0',
-            margin: 'auto',
-            padding: 0,
-          }}
-        >
-          {/* Iframe (Scaled) */}
-          <iframe
-            ref={iframeRef}
-            title="Live Preview"
-            sandbox="allow-scripts"
-            srcDoc={srcDoc}
+        {isSvgWithDimensions ? (
+          /* SVG Content - Use calculated dimensions with scaling */
+          <div
             style={{
-              width: baseWidth,
-              height: baseHeight,
-              transform: previewScale === 1 ? 'none' : `scale(${previewScale})`,
+              width: scaledWidth,
+              height: scaledHeight,
+              ...checkerboardStyle,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
               transformOrigin: '0 0',
-              border: 'none',
-              display: 'block',
-              backgroundColor: 'transparent',
-              margin: 0,
+              margin: 'auto',
               padding: 0,
             }}
-          />
-        </div>
+          >
+            <iframe
+              ref={iframeRef}
+              title="Live Preview"
+              sandbox="allow-scripts"
+              scrolling="no"
+              srcDoc={srcDoc}
+              style={{
+                width: baseWidth,
+                height: baseHeight,
+                transform: effectiveScale === 1 ? 'none' : `scale(${effectiveScale})`,
+                transformOrigin: '0 0',
+                border: 'none',
+                display: 'block',
+                backgroundColor: 'transparent',
+                margin: 0,
+                padding: 0,
+                pointerEvents: 'auto'
+              }}
+            />
+          </div>
+        ) : (
+          /* HTML Content - Fill container using CSS, no JS measurements */
+          <div
+            style={{
+              width: '100%',
+              height: '100%',
+              ...checkerboardStyle,
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <iframe
+              ref={iframeRef}
+              title="Live Preview"
+              sandbox="allow-scripts"
+              srcDoc={srcDoc}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                display: 'block',
+                backgroundColor: 'transparent',
+                margin: 0,
+                padding: 0,
+                pointerEvents: 'auto'
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
