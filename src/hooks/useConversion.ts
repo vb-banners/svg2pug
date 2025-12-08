@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import beautify from 'js-beautify';
 import pugBeautify from 'pug-beautify';
-import { optimize } from '../vendor/svgo-browser.esm';
 import { SvgoSettings } from '../types/SvgoSettings';
 import { SVGO_PLUGIN_OPTIONS } from '../svgo-config';
 
@@ -9,7 +8,7 @@ export const useConversion = () => {
   const buildSvgoConfig = useCallback((settings: SvgoSettings) => {
     const floatPrecision = Number(settings.floatPrecision);
     const transformPrecision = Number(settings.transformPrecision);
-    const plugins: Array<{ name: string; params?: any }> = [];
+    const plugins: Array<any> = [];
 
     for (const option of SVGO_PLUGIN_OPTIONS) {
       const enabled = Boolean(settings.plugins[option.id]);
@@ -37,6 +36,45 @@ export const useConversion = () => {
       }
     }
 
+    // Custom plugins
+    if (settings.plugins.figmaCleanup) {
+      plugins.push({
+        name: 'figmaCleanup',
+        type: 'visitor',
+        fn: () => {
+          return {
+            element: {
+              enter: (node: any) => {
+                if (node.attributes.id) {
+                  if (node.attributes.id.includes('Exclude') || node.attributes.id.includes('Vector')) {
+                    delete node.attributes.id;
+                  }
+                }
+              }
+            }
+          };
+        }
+      });
+    }
+
+    if (settings.plugins.removeBlackFill) {
+      plugins.push({
+        name: 'removeBlackFill',
+        type: 'visitor',
+        fn: () => {
+          return {
+            element: {
+              enter: (node: any) => {
+                if (node.attributes.fill === '#000' || node.attributes.fill === '#000000') {
+                  delete node.attributes.fill;
+                }
+              }
+            }
+          };
+        }
+      });
+    }
+
     const config = {
       multipass: Boolean(settings.multipass),
       plugins,
@@ -49,7 +87,7 @@ export const useConversion = () => {
     return config;
   }, []);
 
-  const applySvgoOptimizations = useCallback((source: string, settings: SvgoSettings): string => {
+  const applySvgoOptimizations = useCallback(async (source: string, settings: SvgoSettings): Promise<string> => {
     const html = typeof source === 'string' ? source : '';
     if (!html.trim()) {
       return html;
@@ -63,6 +101,9 @@ export const useConversion = () => {
 
     const config = buildSvgoConfig(settings);
 
+    // Dynamic import
+    const { optimize } = await import('../vendor/svgo-browser.esm');
+
     let optimized = '';
     let lastIndex = 0;
     let match;
@@ -75,8 +116,8 @@ export const useConversion = () => {
         if (result && typeof result.data === 'string') {
           fragment = result.data;
         }
-      } catch (error) {
-        console.warn('SVGO optimization failed for fragment:', error);
+      } catch {
+        // Silent failure for SVGO optimization
       }
       optimized += fragment;
       lastIndex = match.index + match[0].length;
@@ -334,7 +375,7 @@ export const useConversion = () => {
     return html.search(/<\/html>|<\/body>/) > -1;
   }, []);
 
-  const convertHtmlToPug = useCallback((
+  const convertHtmlToPug = useCallback(async (
     sourceHtml: string,
     options: {
       isSvgoEnabled: boolean;
@@ -346,7 +387,7 @@ export const useConversion = () => {
       tabSize: number;
       fileName?: string | null;
     }
-  ): string => {
+  ): Promise<string> => {
     if (!sourceHtml || typeof sourceHtml !== 'string' || !sourceHtml.trim()) {
       return '';
     }
@@ -359,7 +400,7 @@ export const useConversion = () => {
     }
 
     const optimizedHtml = options.isSvgoEnabled
-      ? applySvgoOptimizations(processedHtml, options.svgoSettings)
+      ? await applySvgoOptimizations(processedHtml, options.svgoSettings)
       : processedHtml;
 
     const reorderedHtml = reorderFillOpacity(optimizedHtml);
@@ -372,41 +413,42 @@ export const useConversion = () => {
 
     const html = reorderedHtml.replace(/template/g, 'template_');
     
-    let result = '';
-    if (window.Html2Jade) {
-      (window.Html2Jade as any).convertHtml(html, convertOptions, (err: any, jade: string) => {
-        if (err) {
-          result = '';
-          return;
-        }
-        let sanitizeJade = jade
-          .replace(/\|\s+$/gm, '')
-          .replace(/^(?:[\t ]*(?:\r?\n|\r))+/gm, '');
-        if (isBodyless) {
-          sanitizeJade = sanitizeJade.replace('head\n', '');
-        }
-        sanitizeJade = sanitizeJade.replace(/template_/g, 'template');
-        sanitizeJade = pugBeautify(sanitizeJade, {
-          fill_tab: !options.useSoftTabs,
-          tab_size: options.tabSize
+    return new Promise((resolve) => {
+      if (window.Html2Jade) {
+        (window.Html2Jade as any).convertHtml(html, convertOptions, (err: any, jade: string) => {
+          if (err) {
+            resolve('');
+            return;
+          }
+          let sanitizeJade = jade
+            .replace(/\|\s+$/gm, '')
+            .replace(/^(?:[\t ]*(?:\r?\n|\r))+/gm, '');
+          if (isBodyless) {
+            sanitizeJade = sanitizeJade.replace('head\n', '');
+          }
+          sanitizeJade = sanitizeJade.replace(/template_/g, 'template');
+          sanitizeJade = pugBeautify(sanitizeJade, {
+            fill_tab: !options.useSoftTabs,
+            tab_size: options.tabSize
+          });
+          if (options.enableSvgIdToClass) {
+            sanitizeJade = applySvgIdToClassTransform(sanitizeJade);
+          }
+          if (options.enableCommonClasses) {
+            sanitizeJade = applyCommonClassesTransform(sanitizeJade);
+          }
+          if (options.enablePugSizeVars) {
+            sanitizeJade = applyPugSizeVarsTransform(sanitizeJade, optimizedHtml);
+          }
+          if (options.svgoSettings?.plugins?.removeSvgElement) {
+            sanitizeJade = removeSvgParentFromPug(sanitizeJade, options.useSoftTabs, options.tabSize);
+          }
+          resolve(sanitizeJade);
         });
-        if (options.enableSvgIdToClass) {
-          sanitizeJade = applySvgIdToClassTransform(sanitizeJade);
-        }
-        if (options.enableCommonClasses) {
-          sanitizeJade = applyCommonClassesTransform(sanitizeJade);
-        }
-        if (options.enablePugSizeVars) {
-          sanitizeJade = applyPugSizeVarsTransform(sanitizeJade, optimizedHtml);
-        }
-        if (options.svgoSettings?.plugins?.removeSvgElement) {
-          sanitizeJade = removeSvgParentFromPug(sanitizeJade, options.useSoftTabs, options.tabSize);
-        }
-        result = sanitizeJade;
-      });
-    }
-    
-    return result;
+      } else {
+        resolve('');
+      }
+    });
   }, [applySvgoOptimizations, removeMatchingRects, applySvgIdToClassTransform, applyCommonClassesTransform, applyPugSizeVarsTransform, removeSvgParentFromPug, findHTMLOrBodyTag]);
 
   const convertPugToHtml = useCallback((
@@ -415,6 +457,7 @@ export const useConversion = () => {
       tabSize: number;
       useSoftTabs: boolean;
       injectDebugInfo?: boolean;
+      locals?: Record<string, any>;
     }
   ): string => {
     try {
@@ -423,7 +466,8 @@ export const useConversion = () => {
       }
 
       const renderOptions: any = { 
-        pretty: true 
+        pretty: true,
+        ...options.locals
       };
 
       if (options.injectDebugInfo) {

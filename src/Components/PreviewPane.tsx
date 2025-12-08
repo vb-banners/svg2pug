@@ -28,6 +28,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   const [contentHeight, setContentHeight] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [isFitMode, setIsFitMode] = useState(true);
 
   // Send highlight message to iframe
   useEffect(() => {
@@ -40,10 +41,35 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     }
   }, [highlightLines, isCopied]);
 
-  // Reset zoom when switching files
+  // Reset zoom and enable auto-fit when switching files
   useEffect(() => {
     setPreviewScale(1);
+    setContentWidth(0);
+    setContentHeight(0);
+    setIsFitMode(true);
   }, [fileId, setPreviewScale]);
+
+  // Auto-fit logic
+  useEffect(() => {
+    if (isFitMode && contentWidth > 0 && contentHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
+      const padding = 32; // Padding for better aesthetics
+      const availableWidth = Math.max(0, containerSize.width - padding);
+      const availableHeight = Math.max(0, containerSize.height - padding);
+      
+      const scaleX = availableWidth / contentWidth;
+      const scaleY = availableHeight / contentHeight;
+      const fitScale = Math.min(scaleX, scaleY, 1); // Only scale down or stay at 100%
+      
+      // Round to 2 decimal places to avoid jitter
+      const roundedScale = Math.floor(fitScale * 100) / 100;
+      // Ensure we don't scale down ridiculously small
+      const finalScale = Math.max(0.1, roundedScale);
+      
+      if (finalScale !== previewScale) {
+        setPreviewScale(finalScale);
+      }
+    }
+  }, [isFitMode, contentWidth, contentHeight, containerSize, previewScale, setPreviewScale]);
 
   // Parse SVG dimensions directly from content
   useEffect(() => {
@@ -116,6 +142,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   const MIN_SCALE = 0.1;
   const MAX_SCALE = 10.0;
   const ZOOM_SENSITIVITY = 0.005;
+  const ZOOM_LEVELS = [0.1, 0.25, 0.5, 0.75, 1, 1.5, 2, 3];
 
   // Checkerboard pattern for transparency
   const checkerboardStyle = {
@@ -452,6 +479,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   }, [previewScale]);
 
   const handleZoom = useCallback((deltaY: number) => {
+    setIsFitMode(false);
     const currentScale = previewScaleRef.current;
     const zoomFactor = Math.exp(-deltaY * ZOOM_SENSITIVITY);
     const newScale = currentScale * zoomFactor;
@@ -481,10 +509,12 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
         setContentHeight(event.data.height);
       } else if (event.data?.type === 'preview-gesture-start') {
         gestureStartScaleRef.current = previewScaleRef.current;
+        setIsFitMode(false);
       } else if (event.data?.type === 'preview-gesture-change') {
         const newScale = gestureStartScaleRef.current * event.data.scale;
         const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
         setPreviewScale(clampedScale);
+        setIsFitMode(false);
       }
     };
 
@@ -508,11 +538,13 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     const handleGestureStart = (e: any) => {
       e.preventDefault();
       gestureStartScaleRef.current = previewScaleRef.current;
+      setIsFitMode(false);
     };
     const handleGestureChange = (e: any) => {
       e.preventDefault();
       const newScale = gestureStartScaleRef.current * e.scale;
       setPreviewScale(Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale)));
+      setIsFitMode(false);
     };
     const handleGestureEnd = (e: any) => {
       e.preventDefault();
@@ -533,15 +565,33 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
 
   const handleScaleChange = (value: string) => {
     if (value === 'fit') {
-      setPreviewScale(1);
+      setIsFitMode(true);
     } else {
+      setIsFitMode(false);
       setPreviewScale(parseFloat(value));
     }
   };
 
-  const handleResetZoom = () => setPreviewScale(1);
-  const handleZoomIn = () => handleZoom(-100);
-  const handleZoomOut = () => handleZoom(100);
+  const handleResetZoom = () => {
+    setIsFitMode(false);
+    setPreviewScale(1);
+  };
+
+  const handleZoomIn = () => {
+    setIsFitMode(false);
+    const current = previewScale;
+    // Find next level that is significantly larger than current (to avoid floating point issues)
+    const next = ZOOM_LEVELS.find(l => l > current + 0.01) || ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+    setPreviewScale(next);
+  };
+
+  const handleZoomOut = () => {
+    setIsFitMode(false);
+    const current = previewScale;
+    // Find prev level
+    const prev = [...ZOOM_LEVELS].reverse().find(l => l < current - 0.01) || ZOOM_LEVELS[0];
+    setPreviewScale(prev);
+  };
 
   const displayPercentage = Math.round(previewScale * 100);
 
@@ -567,11 +617,12 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomOut} title="Zoom Out">
             <ZoomOut className="h-3 w-3" />
           </Button>
-          <Select value={previewScale.toString()} onValueChange={handleScaleChange}>
+          <Select value={isFitMode ? 'fit' : previewScale.toString()} onValueChange={handleScaleChange}>
             <SelectTrigger className="h-6 w-[80px] text-xs border-none bg-transparent hover:bg-primary/10 hover:text-primary focus:ring-0 transition-colors justify-center">
-              <span>{displayPercentage}%</span>
+              <span>{isFitMode ? 'Fit' : `${displayPercentage}%`}</span>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="fit">Fit to View</SelectItem>
               <SelectItem value="0.1">10%</SelectItem>
               <SelectItem value="0.25">25%</SelectItem>
               <SelectItem value="0.5">50%</SelectItem>
@@ -622,7 +673,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           <iframe
             ref={iframeRef}
             title="Live Preview"
-            sandbox="allow-scripts allow-same-origin"
+            sandbox="allow-scripts"
             srcDoc={srcDoc}
             style={{
               width: baseWidth,

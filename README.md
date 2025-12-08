@@ -46,7 +46,10 @@ A real-time online converter that transforms SVG code into PUG (formerly Jade) t
   - Defs blocks automatically positioned at the beginning
   - Optional removal of the root `<svg>` wrapper with children re-indented to match your tab/space settings
   - Auto-removal of rect elements matching filename
+  - **Figma Cleanup**: Optional removal of "Exclude" and "Vector" IDs
+  - **Black Fill Removal**: Optional removal of black fills (enabled by default)
 - **Smart Formatting**: Automatic beautification of both HTML and PUG code
+- **Performance**: Optimized bundle size with code splitting for fast load times
 - **Bodyless Mode**: Automatically detects and handles HTML snippets without `<html>` or `<body>` tags
 
 ## 🚀 Demo
@@ -118,10 +121,11 @@ Click the "SVGO Settings" button to access advanced SVG optimization options:
   - **Multipass**: Run optimization up to 10 times for maximum compression
   - **PUG Size Vars**: Convert width/height to variables when matching viewBox
   - **Remove SVG Parent**: Drop the outer `<svg>` element and shift all children one indent left (honors tabs/spaces and tab size)
+  - **Figma Cleanup**: Remove IDs containing "Exclude" or "Vector"
   - **Number Precision**: Control decimal precision (0-8)
   - **Transform Precision**: Control transform precision (0-8)
 - **Cleanup**: Remove doctype, comments, metadata, editor data, hidden elements, etc.
-- **Styles & Attributes**: Clean up attributes, merge/inline styles, minify CSS
+- **Styles & Attributes**: Clean up attributes, merge/inline styles, minify CSS, remove black fills
 - **Structure**: Optimize element grouping and hierarchy
 - **Paths & Shapes**: Convert shapes to paths, merge paths, optimize path data
 - **Numbers & Transforms**: Round coordinates and optimize transform matrices

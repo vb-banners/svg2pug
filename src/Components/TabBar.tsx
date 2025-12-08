@@ -212,11 +212,11 @@ export const TabBar: React.FC = () => {
 
       fileArray.forEach((file, index) => {
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
           const content = event.target?.result as string;
           if (!content) return;
 
-          const pugContent = convertHtmlToPug(content, {
+          const pugContent = await convertHtmlToPug(content, {
             isSvgoEnabled: state.isSvgoEnabled,
             svgoSettings: state.svgoSettings,
             enableSvgIdToClass: state.enableSvgIdToClass,
@@ -242,7 +242,7 @@ export const TabBar: React.FC = () => {
           }
         };
         reader.onerror = () => {
-          console.error(`Failed to read file: ${file.name}`);
+          // Silent failure
           processedCount++;
         };
         reader.readAsText(file);

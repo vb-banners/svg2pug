@@ -79,7 +79,7 @@ export const useFileTabs = () => {
     setDragOverTabId(null);
   }, [setDraggedTabId, setDragOverTabId]);
 
-  const handleFileOpen = useCallback((files: FileList | null, convertHtmlToPug: (html: string, fileName: string) => string) => {
+  const handleFileOpen = useCallback((files: FileList | null, convertHtmlToPug: (html: string, fileName: string) => Promise<string>) => {
     if (!files || files.length === 0) {
       return;
     }
@@ -90,12 +90,12 @@ export const useFileTabs = () => {
 
     Array.from(files).forEach((file, index) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const content = e.target?.result;
         if (typeof content === 'string') {
           const fileId = `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`;
           
-          const pugContent = convertHtmlToPug(content, file.name);
+          const pugContent = await convertHtmlToPug(content, file.name);
           
           newFiles.push({
             id: fileId,
@@ -111,7 +111,7 @@ export const useFileTabs = () => {
         }
       };
       reader.onerror = () => {
-        console.error(`Failed to read file: ${file.name}`);
+        // Silent failure
         filesProcessed++;
       };
       reader.readAsText(file);

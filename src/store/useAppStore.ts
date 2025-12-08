@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { AppState, CursorPosition, SelectionInfo, CompressionStats } from '../types/AppState';
 import { SvgoSettings } from '../types/SvgoSettings';
 import { FileTab, ControlsPosition } from '../types/FileTab';
-import { getDefaultSvgoSettings } from '../svgo-config';
+import { getDefaultSvgoSettings, mergeSvgoSettings } from '../svgo-config';
 import { HTMLCode as defaultHTMLCode, JADECode as defaultJADECode } from '../template';
 import { migrateLocalStorageData, needsMigration } from '../utils/localStorage-migration';
 
@@ -353,6 +353,18 @@ export const useAppStore = create<AppStore>()(
         if (state) {
           state.setHasHydrated(true);
         }
+      },
+      merge: (persistedState: any, currentState: AppStore) => {
+        if (!persistedState) return currentState;
+        
+        const mergedState = { ...currentState, ...persistedState };
+        
+        // Ensure svgoSettings are correctly merged with defaults to handle new properties
+        if (persistedState.svgoSettings) {
+           mergedState.svgoSettings = mergeSvgoSettings(persistedState.svgoSettings);
+        }
+        
+        return mergedState;
       },
       partialize: (state) => ({
         // Only persist these fields

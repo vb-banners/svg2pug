@@ -79,8 +79,8 @@ export const migrateLocalStorageData = () => {
     if (activeFile) {
       migrated.activeFileId = activeFile;
     }
-  } catch (error) {
-    console.error('Error migrating localStorage data:', error);
+  } catch {
+    // Silent failure
   }
 
   return migrated;

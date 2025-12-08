@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import Editor, { OnMount, Monaco, loader } from '@monaco-editor/react';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { ayuMirageTheme } from '../themes/ayu-mirage-monaco';
 
 interface MonacoEditorProps {

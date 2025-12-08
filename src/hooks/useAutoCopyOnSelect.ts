@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { useAppStore } from '../store/useAppStore';
 
 /**
@@ -66,8 +66,8 @@ export const useAutoCopyOnSelect = (
             );
             onCopy?.();
           })
-          .catch((err) => {
-            console.error('Failed to copy to clipboard:', err);
+          .catch(() => {
+            // Silent failure
           });
       }, 50);
     });

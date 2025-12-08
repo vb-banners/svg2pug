@@ -56,7 +56,7 @@ const App: React.FC = () => {
       clearInterval(interval);
       // Load anyway after timeout to show error state
       setScriptsLoaded(true);
-      console.error('External scripts failed to load within timeout');
+      // Silent failure
     }, 5000);
 
     return () => {
@@ -68,7 +68,7 @@ const App: React.FC = () => {
   // Handle conversion for global HTML code (when no tabs are open)
   useEffect(() => {
     if (openFiles.length === 0) {
-      const result = convertHtmlToPug(HTMLCode, {
+      convertHtmlToPug(HTMLCode, {
         isSvgoEnabled,
         svgoSettings,
         enableSvgIdToClass,
@@ -77,8 +77,9 @@ const App: React.FC = () => {
         useSoftTabs,
         tabSize,
         fileName: null
+      }).then(result => {
+        setJADECode(result);
       });
-      setJADECode(result);
     }
   }, [HTMLCode, openFiles.length, isSvgoEnabled, svgoSettings, enableSvgIdToClass, enableCommonClasses, enablePugSizeVars, useSoftTabs, tabSize, convertHtmlToPug, setJADECode]);
   
@@ -116,11 +117,11 @@ const App: React.FC = () => {
 
           fileArray.forEach((file, index) => {
             const reader = new FileReader();
-            reader.onload = (event) => {
+            reader.onload = async (event) => {
               const content = event.target?.result as string;
               if (!content) return;
               
-              const pugContent = convertHtmlToPug(content, {
+              const pugContent = await convertHtmlToPug(content, {
                 isSvgoEnabled: store.isSvgoEnabled,
                 svgoSettings: store.svgoSettings,
                 enableSvgIdToClass: store.enableSvgIdToClass,
@@ -146,7 +147,7 @@ const App: React.FC = () => {
               }
             };
             reader.onerror = () => {
-              console.error(`Failed to read file: ${file.name}`);
+              // Silent failure
               processedCount++;
             };
             reader.readAsText(file);

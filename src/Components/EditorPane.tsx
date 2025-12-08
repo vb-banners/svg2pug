@@ -9,6 +9,7 @@ import { useAutoCopyOnSelect } from '../hooks/useAutoCopyOnSelect';
 import { useEditorCursor } from '../hooks/useEditorCursor';
 import { useCompressionStats } from '../hooks/useCompressionStats';
 import type * as monaco from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
 
 export const EditorPane: React.FC = () => {
   const openFiles = useAppStore(state => state.openFiles);
@@ -58,6 +59,7 @@ export const EditorPane: React.FC = () => {
   const htmlEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const pugEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [pugEditorInstance, setPugEditorInstance] = React.useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [pugMonacoInstance, setPugMonacoInstance] = React.useState<Monaco | null>(null);
   const [previewLayout, setPreviewLayout] = React.useState<'vertical' | 'horizontal'>('vertical');
   const [highlightLines, setHighlightLines] = React.useState<number[]>([]);
   const [isCopied, setIsCopied] = React.useState(false);
@@ -141,9 +143,10 @@ export const EditorPane: React.FC = () => {
     setTimeout(() => editor.layout(), 0);
   }, [handleHTMLScroll]);
 
-  const handlePugMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
+  const handlePugMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
     pugEditorRef.current = editor;
     setPugEditorInstance(editor); // Update state to trigger useQuickCopy
+    setPugMonacoInstance(monacoInstance);
     editor.onDidScrollChange(handlePugScroll);
     
     // Track cursor position and selection changes for highlighting
@@ -173,7 +176,7 @@ export const EditorPane: React.FC = () => {
   }, []);
 
   // Enable Quick Copy feature for Pug editor (using state to ensure it updates when editor mounts)
-  useQuickCopy(pugEditorInstance, enableQuickCopy, handleCopy);
+  useQuickCopy(pugEditorInstance, pugMonacoInstance, enableQuickCopy, handleCopy);
 
   // Enable auto-copy on selection for Pug editor when Quick Copy is disabled
   useAutoCopyOnSelect(pugEditorInstance, enableQuickCopy, handleCopy);
@@ -244,11 +247,11 @@ export const EditorPane: React.FC = () => {
     const files = state.openFiles;
     if (!files || files.length === 0) return;
 
-    files.forEach(file => {
+    files.forEach(async (file) => {
       const htmlContent = file.htmlContent || '';
       if (!htmlContent.trim()) return;
 
-      const pugContent = convertHtmlToPug(htmlContent, {
+      const pugContent = await convertHtmlToPug(htmlContent, {
         isSvgoEnabled,
         svgoSettings,
         enableSvgIdToClass,
@@ -282,7 +285,7 @@ export const EditorPane: React.FC = () => {
   // Reconvert HTML to Pug when settings change
   useEffect(() => {
     if (displayHTMLCode && displayHTMLCode.trim().length > 0) {
-      const pugContent = convertHtmlToPug(displayHTMLCode, {
+      convertHtmlToPug(displayHTMLCode, {
         isSvgoEnabled,
         svgoSettings,
         enableSvgIdToClass,
@@ -291,13 +294,13 @@ export const EditorPane: React.FC = () => {
         useSoftTabs,
         tabSize,
         fileName: activeFile?.name || null
+      }).then(pugContent => {
+        if (activeFile) {
+          updateFileContent(activeFile.id, displayHTMLCode, pugContent);
+        } else {
+          useAppStore.getState().setJADECode(pugContent);
+        }
       });
-
-      if (activeFile) {
-        updateFileContent(activeFile.id, displayHTMLCode, pugContent);
-      } else {
-        useAppStore.getState().setJADECode(pugContent);
-      }
     }
   }, [isSvgoEnabled, svgoSettings, enableSvgIdToClass, enableCommonClasses, enablePugSizeVars, useSoftTabs, tabSize]);
 
@@ -411,13 +414,28 @@ export const EditorPane: React.FC = () => {
       return match && match[1] ? match[1].trim() : '';
     };
 
+    const extractSvgDimensions = (html: string) => {
+      const viewBoxMatch = html.match(/viewBox=['"]([^'"]+)['"]/i);
+      if (viewBoxMatch) {
+        const parts = viewBoxMatch[1].split(/[\s,]+/).filter(Boolean);
+        if (parts.length === 4) {
+          return { width: parts[2], height: parts[3] };
+        }
+      }
+      return null;
+    };
+
     let content = displayHTMLCode || '';
     
     if (displayJADECode) {
+      const dimensions = extractSvgDimensions(displayHTMLCode || '');
+      const locals = dimensions ? { width: dimensions.width, height: dimensions.height } : {};
+
       let debugHtml = convertPugToHtml(displayJADECode, {
         useSoftTabs,
         tabSize,
-        injectDebugInfo: true
+        injectDebugInfo: true,
+        locals
       }) || '';
 
       if (debugHtml && !/<svg[\s\S]*?>/i.test(debugHtml)) {
@@ -445,6 +463,9 @@ export const EditorPane: React.FC = () => {
     const contextKey = `${fileKey}:${pugToCopy}`;
     if (lastCopiedContextRef.current === contextKey) return;
 
+    // Check if document has focus before trying to write to clipboard
+    if (!document.hasFocus()) return;
+
     navigator.clipboard.writeText(pugToCopy)
       .then(() => {
         lastCopiedContextRef.current = contextKey;
@@ -456,8 +477,8 @@ export const EditorPane: React.FC = () => {
           15000
         );
       })
-      .catch((err) => {
-        console.error('Failed to copy Pug to clipboard:', err);
+      .catch(() => {
+        // Silently fail if clipboard write fails (e.g. not focused)
       });
   }, [activeFileId, displayJADECode, hasHydrated, activeFile]);
 

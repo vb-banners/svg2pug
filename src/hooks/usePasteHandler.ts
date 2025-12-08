@@ -76,7 +76,7 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
         if (isBlankTab && fileContents.length === 1) {
           // Scenario 2: Pasting into a blank tab - replace its content
           const { name, content } = fileContents[0];
-          const pugContent = convertHtmlToPug(content, {
+          const pugContent = await convertHtmlToPug(content, {
             isSvgoEnabled: store.isSvgoEnabled,
             svgoSettings: store.svgoSettings,
             enableSvgIdToClass: store.enableSvgIdToClass,
@@ -92,8 +92,8 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
           store.updateFileName(activeFile.id, name);
         } else {
           // Scenario 1: No tabs open or multiple files - create new tabs
-          const newFiles = fileContents.map((fileContent, index) => {
-            const pugContent = convertHtmlToPug(fileContent.content, {
+          const newFiles = await Promise.all(fileContents.map(async (fileContent, index) => {
+            const pugContent = await convertHtmlToPug(fileContent.content, {
               isSvgoEnabled: store.isSvgoEnabled,
               svgoSettings: store.svgoSettings,
               enableSvgIdToClass: store.enableSvgIdToClass,
@@ -110,12 +110,12 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
               htmlContent: fileContent.content,
               pugContent: pugContent
             };
-          });
+          }));
 
           store.addFiles(newFiles);
         }
-      } catch (error) {
-        console.error('Failed to process pasted files:', error);
+      } catch {
+        // Silent failure
       }
     };
 

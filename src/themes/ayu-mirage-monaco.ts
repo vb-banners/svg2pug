@@ -1,4 +1,4 @@
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
 // Ayu Mirage theme for Monaco Editor matching the custom Ace theme
 export const ayuMirageTheme: monaco.editor.IStandaloneThemeData = {
@@ -125,6 +125,3 @@ export const ayuMirageTheme: monaco.editor.IStandaloneThemeData = {
   },
 };
 
-export const registerAyuMirageTheme = () => {
-  monaco.editor.defineTheme('ayu-mirage', ayuMirageTheme);
-};

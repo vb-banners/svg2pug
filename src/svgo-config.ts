@@ -74,6 +74,8 @@ export const getDefaultSvgoSettings = (): SvgoSettings => {
   }
   // Custom toggles that aren't part of SVGO's built-in plugin list
   plugins.removeSvgElement = true;
+  plugins.figmaCleanup = false;
+  plugins.removeBlackFill = true;
   return { ...GLOBAL_DEFAULTS, plugins };
 };
 
@@ -124,12 +126,20 @@ export const mergeSvgoSettings = (raw: any): SvgoSettings => {
     if (Object.prototype.hasOwnProperty.call(raw.plugins, 'removeSvgElement')) {
       merged.plugins.removeSvgElement = Boolean(raw.plugins.removeSvgElement);
     }
+    if (Object.prototype.hasOwnProperty.call(raw.plugins, 'figmaCleanup')) {
+      merged.plugins.figmaCleanup = Boolean(raw.plugins.figmaCleanup);
+    }
+    if (Object.prototype.hasOwnProperty.call(raw.plugins, 'removeBlackFill')) {
+      merged.plugins.removeBlackFill = Boolean(raw.plugins.removeBlackFill);
+    }
     // Handle old cleanupIDs -> cleanupIds migration
     if (raw.plugins.cleanupIDs !== undefined && raw.plugins.cleanupIds === undefined) {
       merged.plugins.cleanupIds = Boolean(raw.plugins.cleanupIDs);
     }
   } else {
     merged.plugins.removeSvgElement = true;
+    merged.plugins.figmaCleanup = false;
+    merged.plugins.removeBlackFill = true;
   }
 
   return merged;

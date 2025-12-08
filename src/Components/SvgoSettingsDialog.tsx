@@ -91,6 +91,8 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
     removeOffCanvasPaths: 'Remove off-canvas paths',
     reusePaths: 'Reuse paths',
     removeSvgElement: 'Remove SVG parent',
+    figmaCleanup: 'Figma cleanup',
+    removeBlackFill: 'Remove black fill (#000)',
   };
 
   const svgoPluginTooltips: { [key: string]: string } = {
@@ -135,6 +137,8 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
     removeOffCanvasPaths: 'Remove paths that are outside the canvas',
     reusePaths: 'Find and reuse duplicate paths',
     removeSvgElement: 'Removes the top-level <svg> element and un-indents children',
+    figmaCleanup: 'Remove IDs containing "Exclude" or "Vector"',
+    removeBlackFill: 'Remove fill attributes with value #000',
   };
 
   // Plugin categories
@@ -150,7 +154,8 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
     'convertPathData', 'convertTransform', 'removeUnknownsAndDefaults', 'removeNonInheritableGroupAttrs',
     'removeUselessStrokeAndFill', 'removeViewBox', 'cleanupIds', 'cleanupNumericValues',
     'convertShapeToPath', 'moveElemsAttrsToGroup', 'moveGroupAttrsToElems', 'collapseGroups',
-    'removeRasterImages', 'mergePaths', 'convertEllipseToCircle', 'sortAttrs', 'sortDefsChildren'
+    'removeRasterImages', 'mergePaths', 'convertEllipseToCircle', 'sortAttrs', 'sortDefsChildren',
+    'removeBlackFill'
   ];
 
   const structurePlugins = [
@@ -196,6 +201,21 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
                 style={{ color: '#C5C5C5', marginTop: '6px' }}
               >
                 {svgoPluginLabels['removeSvgElement']}
+              </Label>
+            </div>
+            <div className="flex items-center space-x-[15px]" title={svgoPluginTooltips['figmaCleanup']}>
+              <Switch
+                id="figmaCleanup"
+                checked={isPluginEnabled('figmaCleanup')}
+                onCheckedChange={(checked) => handlePluginToggle('figmaCleanup', checked)}
+                aria-label="Toggle Figma Cleanup"
+              />
+              <Label
+                htmlFor="figmaCleanup"
+                className="text-sm font-normal cursor-pointer"
+                style={{ color: '#C5C5C5', marginTop: '6px' }}
+              >
+                {svgoPluginLabels['figmaCleanup']}
               </Label>
             </div>
           </section>

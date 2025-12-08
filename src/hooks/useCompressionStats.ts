@@ -15,8 +15,8 @@ export const useCompressionStats = (htmlCode: string, pugCode: string) => {
           htmlGzipSize: htmlGzipped.length,
           pugGzipSize: pugGzipped.length
         });
-      } catch (error) {
-        console.error('Error calculating compression stats:', error);
+      } catch {
+        // Silent failure
       }
     }, 500);
 

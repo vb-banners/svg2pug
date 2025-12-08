@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.6] - 2025-12-08
+
+### Added
+- **Fit to View Mode**: New default zoom mode that automatically scales content to fit the preview pane
+  - Persists as the default state when switching files
+  - Automatically recalculates when resizing the preview pane
+  - Can be manually re-enabled from the zoom dropdown
+- **Standardized Zoom Steps**: Zoom buttons now use standard increments (10%, 25%, 50%, 75%, 100%, 150%, 200%, 300%) instead of arbitrary values
+
+## [0.4.5] - 2025-12-08
+
+### Added
+- **Auto-Fit Preview**: Automatically scales down large SVGs to fit within the preview pane viewport on load
+- **Fit to View Option**: Added "Fit to View" option in the zoom dropdown to manually trigger auto-fitting
+
+## [0.4.4] - 2025-12-08
+
+### Fixed
+- **Preview Pane**: Fixed blank preview issue when "Remove SVG Parent" or "Pug Size Vars" features were enabled
+  - Updated conversion logic to correctly pass `width` and `height` variables to the Pug renderer
+  - Ensures SVG content is visible even when using dynamic size variables in Pug
+
+## [0.4.3] - 2025-12-08
+
+### Performance
+- **Bundle Size Reduction**: Reduced initial bundle size by ~88% (from ~2.8MB to ~325KB)
+  - Implemented code splitting for `monaco-editor` (loaded asynchronously via CDN)
+  - Implemented dynamic importing for `svgo` (loaded only when needed)
+  - Optimized vendor chunking strategy
+
+## [0.4.2] - 2025-12-08
+
+### Added
+- **Figma Cleanup Toggle**: New SVGO global option to remove IDs containing "Exclude" or "Vector" (common Figma artifacts)
+- **Remove Black Fill Toggle**: New SVGO attribute option to remove `fill` attributes with value `#000` or `#000000` (enabled by default)
+
+### Fixed
+- **Console Errors**: Resolved various console errors and warnings:
+  - Removed `allow-same-origin` from iframe sandbox to fix security warning
+  - Added focus check before clipboard operations to prevent `NotAllowedError`
+  - Suppressed non-critical console logs for cleaner development experience
+- **Settings Persistence**: Ensured all SVGO settings (including new toggles) are correctly saved and restored from local storage across sessions
+
 ## [0.4.1] - 2025-11-19
 
 ### Added

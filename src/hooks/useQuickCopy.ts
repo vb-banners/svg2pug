@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
+import { Monaco } from '@monaco-editor/react';
 import { useAppStore } from '../store/useAppStore';
 
 /**
@@ -14,6 +15,7 @@ import { useAppStore } from '../store/useAppStore';
  */
 export const useQuickCopy = (
   editor: monaco.editor.IStandaloneCodeEditor | null,
+  monacoInstance: Monaco | null,
   enableQuickCopy: boolean,
   onCopy?: () => void
 ) => {
@@ -38,7 +40,7 @@ export const useQuickCopy = (
   useEffect(() => {
     const currentEditor = editorRef.current;
     
-    if (!currentEditor || !enableQuickCopy) {
+    if (!currentEditor || !monacoInstance || !enableQuickCopy) {
       // Clean up listeners if Quick Copy is disabled
       if (hoverDisposableRef.current) {
         hoverDisposableRef.current.dispose();
@@ -161,7 +163,7 @@ export const useQuickCopy = (
       const endLineContent = model.getLineContent(end);
       const endColumn = endLineContent.length + 1;
 
-      const selection = new monaco.Selection(start, startColumn, end, endColumn);
+      const selection = new monacoInstance!.Selection(start, startColumn, end, endColumn);
       currentEditor.setSelection(selection);
       currentSelectionRef.current = selection;
       
@@ -335,8 +337,8 @@ export const useQuickCopy = (
                 );
                 onCopy?.();
               })
-              .catch((err) => {
-                console.error('Failed to copy to clipboard:', err);
+              .catch(() => {
+                // Silent failure
               });
           }
         }
@@ -382,8 +384,8 @@ export const useQuickCopy = (
                 currentEditor.setSelection(selection);
                 onCopy?.();
               })
-              .catch((err) => {
-                console.error('Failed to copy to clipboard:', err);
+              .catch(() => {
+                // Silent failure
               });
           }
         }
@@ -418,5 +420,5 @@ export const useQuickCopy = (
       lockSelectionRef.current = false;
       lockedSelectionRef.current = null;
     };
-  }, [editor, enableQuickCopy]);
+  }, [editor, monacoInstance, enableQuickCopy]);
 };
