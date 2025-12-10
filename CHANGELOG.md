@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.15] - 2025-12-10
+
+### Fixed
+- **SVG Preview with Percentage Dimensions**: Fixed preview not scaling correctly for SVGs with `width="100%"` and `height="100%"` attributes
+  - Now prioritizes `originalHtml` (actual SVG source) for dimension detection instead of `effectiveContent` (which may be Pug output)
+  - Properly extracts dimensions from `viewBox` even when width/height are percentage-based
+  - Removed focus ring from tab close buttons for cleaner UI
+
 ## [0.4.14] - 2025-12-08
 
 ### Fixed

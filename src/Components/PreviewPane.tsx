@@ -25,8 +25,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
 
   // Detect SVG content and extract dimensions synchronously during render
   // This prevents the brief resize flash on page load
+  // Always use originalHtml for SVG detection since effectiveContent might be Pug code
   const { isSvgContent: detectedIsSvg, svgWidth, svgHeight } = useMemo(() => {
-    if (!effectiveContent) return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
+    // First try originalHtml (the actual SVG source), then fall back to effectiveContent
+    const contentToCheck = originalHtml || effectiveContent;
+    if (!contentToCheck) return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
     
     const extractDimensionsFromSvg = (svg: Element) => {
       let w = 0;
@@ -36,6 +39,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
       const heightAttr = svg.getAttribute('height');
       const viewBox = svg.getAttribute('viewBox');
 
+      // Priority 1: ViewBox (most reliable for intrinsic dimensions)
       if (viewBox) {
         const parts = viewBox.split(/[\s,]+/).filter(Boolean).map(parseFloat);
         if (parts.length === 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
@@ -44,6 +48,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
         }
       }
       
+      // Priority 2: Width/Height attributes (only if not percentage-based)
       if (!w && widthAttr && !widthAttr.endsWith('%')) {
         w = parseFloat(widthAttr);
       }
@@ -55,12 +60,13 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     };
 
     const parser = new DOMParser();
-    const doc = parser.parseFromString(effectiveContent, 'text/html');
+    const doc = parser.parseFromString(contentToCheck, 'text/html');
     let svg = doc.querySelector('svg');
     
-    if (!svg && originalHtml) {
-      const originalDoc = parser.parseFromString(originalHtml, 'text/html');
-      svg = originalDoc.querySelector('svg');
+    // Also try parsing effectiveContent if originalHtml didn't have SVG
+    if (!svg && effectiveContent && effectiveContent !== contentToCheck) {
+      const effectiveDoc = parser.parseFromString(effectiveContent, 'text/html');
+      svg = effectiveDoc.querySelector('svg');
     }
     
     if (svg) {
@@ -68,6 +74,9 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
       if (dims.width > 0 && dims.height > 0) {
         return { isSvgContent: true, svgWidth: dims.width, svgHeight: dims.height };
       }
+      // SVG exists but no extractable dimensions - still mark as SVG
+      // This handles cases like width="100%" height="100%" without viewBox
+      return { isSvgContent: true, svgWidth: 0, svgHeight: 0 };
     }
     
     return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
@@ -76,20 +85,12 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const gestureStartScaleRef = useRef<number>(1);
-  const [contentHeight, setContentHeight] = useState(svgHeight);
-  const [contentWidth, setContentWidth] = useState(svgWidth);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isFitMode, setIsFitMode] = useState(true);
-  const [isSvgContent, setIsSvgContent] = useState(detectedIsSvg);
   
-  // Keep isSvgContent in sync with detected value
-  useEffect(() => {
-    setIsSvgContent(detectedIsSvg);
-    if (detectedIsSvg) {
-      setContentWidth(svgWidth);
-      setContentHeight(svgHeight);
-    }
-  }, [detectedIsSvg, svgWidth, svgHeight]);
+  // Use detectedIsSvg directly instead of state to avoid race conditions
+  // isSvgContent is true only if we detected SVG AND extracted valid dimensions
+  const isSvgContent = detectedIsSvg && svgWidth > 0 && svgHeight > 0;
 
   // Send highlight message to iframe
   useEffect(() => {
@@ -105,22 +106,19 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // Reset zoom and enable auto-fit when switching files
   useEffect(() => {
     setPreviewScale(1);
-    setContentWidth(0);
-    setContentHeight(0);
     setIsFitMode(true);
-    setIsSvgContent(false);
   }, [fileId, setPreviewScale]);
 
   // Calculate scale synchronously for Fit Mode to avoid render lag
   // Only apply fit mode for SVG content - HTML should always be 100%
   let effectiveScale = previewScale;
-  if (isSvgContent && isFitMode && contentWidth > 0 && contentHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
+  if (isSvgContent && isFitMode && svgWidth > 0 && svgHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
     const padding = 32;
     const availableWidth = Math.max(0, containerSize.width - padding);
     const availableHeight = Math.max(0, containerSize.height - padding);
     
-    const scaleX = availableWidth / contentWidth;
-    const scaleY = availableHeight / contentHeight;
+    const scaleX = availableWidth / svgWidth;
+    const scaleY = availableHeight / svgHeight;
     const fitScale = Math.min(scaleX, scaleY, 1);
     
     effectiveScale = Math.max(0.1, Math.floor(fitScale * 100) / 100);
@@ -532,18 +530,14 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           });
         }
       } else if (event.data?.type === 'preview-size') {
-        // Only update dimensions from iframe for SVG content
-        // For HTML content, we ignore size reports to prevent resize loops
+        // We now use synchronous detection via useMemo, so we don't need iframe reports
+        // Just notify parent for external use
         if (event.data.width > 0) {
-          setContentHeight(event.data.height);
-          setContentWidth(event.data.width);
           onContentSizeChange?.(event.data.width, event.data.height);
         }
       } else if (event.data?.type === 'preview-height') {
-        // Legacy support or fallback - only for SVG
-        if (isSvgContent) {
-          setContentHeight(event.data.height);
-        }
+        // Legacy support - ignore for now since we use static detection
+        // This would only fire for SVG without viewBox dimensions
       } else if (event.data?.type === 'preview-gesture-start') {
         gestureStartScaleRef.current = previewScaleRef.current;
         setIsFitMode(false);
@@ -635,15 +629,16 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // Calculate dimensions
   // For SVG: use intrinsic dimensions from SVG
   // For HTML: use 100% of container via CSS (no JS measurements needed)
-  const isSvgWithDimensions = isSvgContent && contentWidth > 0 && contentHeight > 0;
+  // isSvgContent already checks for valid dimensions (svgWidth > 0 && svgHeight > 0)
+  const isSvgWithDimensions = isSvgContent;
   
   let baseWidth: number;
   let baseHeight: number;
   
   if (isSvgWithDimensions) {
-    // SVG content - use intrinsic dimensions
-    baseWidth = contentWidth;
-    baseHeight = contentHeight;
+    // SVG content - use intrinsic dimensions from static detection
+    baseWidth = svgWidth;
+    baseHeight = svgHeight;
   } else {
     // HTML content - we'll use CSS 100% instead
     baseWidth = 0;
@@ -692,10 +687,14 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
       {/* Scrollable Container */}
       <div
         ref={containerRef}
-        className="flex-1 overflow-auto relative bg-[#151922] flex"
+        className="flex-1 overflow-auto bg-[#151922]"
         style={{
           padding: 0,
           margin: 0,
+          position: 'relative',
+          display: isSvgWithDimensions ? 'flex' : 'block',
+          justifyContent: isSvgWithDimensions ? 'center' : undefined,
+          alignItems: isSvgWithDimensions ? 'center' : undefined,
         }}
         onScroll={(e) => {
           // Prevent scrolling into negative space (blank area on left/top)
@@ -738,14 +737,15 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
             />
           </div>
         ) : (
-          /* HTML Content - Fill container using CSS, no JS measurements */
+          /* HTML Content - Fill container completely using absolute positioning */
           <div
             style={{
-              width: '100%',
-              height: '100%',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
               ...checkerboardStyle,
-              display: 'flex',
-              flexDirection: 'column',
             }}
           >
             <iframe
@@ -754,6 +754,9 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
               sandbox="allow-scripts"
               srcDoc={srcDoc}
               style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
                 width: '100%',
                 height: '100%',
                 border: 'none',

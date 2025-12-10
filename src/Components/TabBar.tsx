@@ -100,7 +100,7 @@ const SortableTab: React.FC<SortableTabProps> = ({
             <button
               className={cn(
                 'p-0.5 rounded hover:bg-destructive/20 hover:text-destructive transition-colors',
-                'focus:outline-none focus:ring-2 focus:ring-ring',
+                'focus:outline-none',
                 isActive ? 'text-foreground/70' : 'text-muted-foreground'
               )}
               onClick={(e) => {
