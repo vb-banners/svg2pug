@@ -6,6 +6,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.16] - 2026-02-02
+
+### Added
+- **Toast Notification System**: Replaced silent failures with user-visible toast notifications
+  - Success (green), error (red), warning (yellow), and info (blue) variants
+  - Auto-dismiss with progress bar, manual close button
+  - Stacks up to 5 toasts in bottom-right corner via React Portal
+- **Loading Overlay**: Full-screen overlay with spinner during script initialization
+- **Testing Infrastructure**: Comprehensive testing and code quality setup
+  - ESLint configuration extending react-app with Prettier integration
+  - Prettier for consistent code formatting
+  - Jest unit tests for store, hooks, and utilities (68 tests)
+  - GitHub Actions CI/CD workflow for automated testing
+- **Deploy Script**: `npm run deploy` builds to docs/ and commits in one step
+
+### Changed
+- **UI Font**: Replaced Plus Jakarta Sans with Inter font throughout the app
+- **PreviewPane Content Sanitization**: Improved iframe content handling
+  - Strips document wrappers (`<!DOCTYPE>`, `<html>`, `<head>`, `<body>`) from full HTML documents
+  - Removes `<script>` tags to prevent JavaScript errors in sandboxed iframe context
+
+### Fixed
+- **Preview JavaScript Errors**: Fixed `Unexpected token '{'` syntax errors in preview iframe by sanitizing injected content
+
 ## [0.4.15] - 2025-12-10
 
 ### Fixed

@@ -1,6 +1,6 @@
 # SVG to PUG Converter (Beta)
 
-A real-time online converter that transforms SVG code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization. Version 0.4.1 adds the **Remove SVG Parent** toggle alongside the Live Preview pane and in-editor color highlighting introduced in 0.4.0.
+A real-time online converter that transforms SVG code into PUG (formerly Jade) template syntax. Built with React and TypeScript, featuring Monaco Editor with live bidirectional conversion, multi-file support, and advanced SVG optimization.
 
 ## 🌟 Features
 
@@ -74,6 +74,18 @@ npm install
 ```bash
 # Start the development server
 npm start
+
+# Run tests
+npm test
+
+# Lint code
+npm run lint
+
+# Format code
+npm run format
+
+# Type check
+npm run typecheck
 ```
 
 The app will open at [http://localhost:3000](http://localhost:3000) in your browser.
