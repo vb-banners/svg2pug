@@ -21,7 +21,7 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
     const handlePaste = async (e: Event) => {
       const clipboardEvent = e as ClipboardEvent;
       const store = useAppStore.getState();
-      
+
       // Get clipboard items
       const items = clipboardEvent.clipboardData?.items;
       if (!items) return;
@@ -32,7 +32,13 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
         const item = items[i];
         if (item.kind === 'file') {
           const file = item.getAsFile();
-          if (file && (file.type === 'image/svg+xml' || file.name.endsWith('.svg') || file.name.endsWith('.html') || file.name.endsWith('.htm'))) {
+          if (
+            file &&
+            (file.type === 'image/svg+xml' ||
+              file.name.endsWith('.svg') ||
+              file.name.endsWith('.html') ||
+              file.name.endsWith('.htm'))
+          ) {
             files.push(file);
           }
         }
@@ -46,12 +52,11 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
 
       const openFiles = store.openFiles;
       const activeFileId = store.activeFileId;
-      const activeFile = openFiles.find(f => f.id === activeFileId);
+      const activeFile = openFiles.find((f) => f.id === activeFileId);
 
       // Check if we're in a blank tab scenario
-      const isBlankTab = activeFile && 
-                         activeFile.htmlContent.trim() === '' && 
-                         activeFile.pugContent.trim() === '';
+      const isBlankTab =
+        activeFile && activeFile.htmlContent.trim() === '' && activeFile.pugContent.trim() === '';
 
       // Process files
       const processFile = (file: File): Promise<{ name: string; content: string }> => {
@@ -84,7 +89,7 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
             enablePugSizeVars: store.enablePugSizeVars,
             useSoftTabs: store.useSoftTabs,
             tabSize: store.tabSize,
-            fileName: name
+            fileName: name,
           });
 
           // Update the tab name and content
@@ -92,30 +97,36 @@ export const usePasteHandler = ({ enabled }: UsePasteHandlerOptions) => {
           store.updateFileName(activeFile.id, name);
         } else {
           // Scenario 1: No tabs open or multiple files - create new tabs
-          const newFiles = await Promise.all(fileContents.map(async (fileContent, index) => {
-            const pugContent = await convertHtmlToPug(fileContent.content, {
-              isSvgoEnabled: store.isSvgoEnabled,
-              svgoSettings: store.svgoSettings,
-              enableSvgIdToClass: store.enableSvgIdToClass,
-              enableCommonClasses: store.enableCommonClasses,
-              enablePugSizeVars: store.enablePugSizeVars,
-              useSoftTabs: store.useSoftTabs,
-              tabSize: store.tabSize,
-              fileName: fileContent.name
-            });
+          const newFiles = await Promise.all(
+            fileContents.map(async (fileContent, index) => {
+              const pugContent = await convertHtmlToPug(fileContent.content, {
+                isSvgoEnabled: store.isSvgoEnabled,
+                svgoSettings: store.svgoSettings,
+                enableSvgIdToClass: store.enableSvgIdToClass,
+                enableCommonClasses: store.enableCommonClasses,
+                enablePugSizeVars: store.enablePugSizeVars,
+                useSoftTabs: store.useSoftTabs,
+                tabSize: store.tabSize,
+                fileName: fileContent.name,
+              });
 
-            return {
-              id: `paste-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
-              name: fileContent.name,
-              htmlContent: fileContent.content,
-              pugContent: pugContent
-            };
-          }));
+              return {
+                id: `paste-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+                name: fileContent.name,
+                htmlContent: fileContent.content,
+                pugContent: pugContent,
+              };
+            })
+          );
 
           store.addFiles(newFiles);
         }
-      } catch {
-        // Silent failure
+      } catch (error) {
+        store.addToast({
+          type: 'error',
+          title: 'Failed to paste file(s)',
+          description: error instanceof Error ? error.message : 'Could not read pasted content.',
+        });
       }
     };
 

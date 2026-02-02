@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { Button } from './ui/button';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
@@ -19,12 +13,12 @@ interface SvgoSettingsDialogProps {
 }
 
 export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, onClose }) => {
-  const svgoSettings = useAppStore(state => state.svgoSettings);
-  const setSvgoSettings = useAppStore(state => state.setSvgoSettings);
-  const toggleSvgoPlugin = useAppStore(state => state.toggleSvgoPlugin);
-  const updateSvgoPrecision = useAppStore(state => state.updateSvgoPrecision);
-  const enablePugSizeVars = useAppStore(state => state.enablePugSizeVars);
-  const setEnablePugSizeVars = useAppStore(state => state.setEnablePugSizeVars);
+  const svgoSettings = useAppStore((state) => state.svgoSettings);
+  const setSvgoSettings = useAppStore((state) => state.setSvgoSettings);
+  const toggleSvgoPlugin = useAppStore((state) => state.toggleSvgoPlugin);
+  const updateSvgoPrecision = useAppStore((state) => state.updateSvgoPrecision);
+  const enablePugSizeVars = useAppStore((state) => state.enablePugSizeVars);
+  const setEnablePugSizeVars = useAppStore((state) => state.setEnablePugSizeVars);
 
   const handlePluginToggle = (pluginName: string, enabled: boolean) => {
     toggleSvgoPlugin(pluginName, enabled);
@@ -143,24 +137,51 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
 
   // Plugin categories
   const cleanupPlugins = [
-    'cleanupAttrs', 'mergeStyles', 'inlineStyles', 'removeDoctype', 'removeXMLProcInst',
-    'removeComments', 'removeMetadata', 'removeTitle', 'removeDesc', 'removeUselessDefs',
-    'removeXMLNS', 'removeEditorsNSData', 'removeEmptyAttrs', 'removeHiddenElems',
-    'removeEmptyText', 'removeEmptyContainers', 'removeScriptElement'
+    'cleanupAttrs',
+    'mergeStyles',
+    'inlineStyles',
+    'removeDoctype',
+    'removeXMLProcInst',
+    'removeComments',
+    'removeMetadata',
+    'removeTitle',
+    'removeDesc',
+    'removeUselessDefs',
+    'removeXMLNS',
+    'removeEditorsNSData',
+    'removeEmptyAttrs',
+    'removeHiddenElems',
+    'removeEmptyText',
+    'removeEmptyContainers',
+    'removeScriptElement',
   ];
 
   const attributePlugins = [
-    'cleanupEnableBackground', 'minifyStyles', 'convertStyleToAttrs', 'convertColors',
-    'convertPathData', 'convertTransform', 'removeUnknownsAndDefaults', 'removeNonInheritableGroupAttrs',
-    'removeUselessStrokeAndFill', 'removeViewBox', 'cleanupIds', 'cleanupNumericValues',
-    'convertShapeToPath', 'moveElemsAttrsToGroup', 'moveGroupAttrsToElems', 'collapseGroups',
-    'removeRasterImages', 'mergePaths', 'convertEllipseToCircle', 'sortAttrs', 'sortDefsChildren',
-    'removeBlackFill'
+    'cleanupEnableBackground',
+    'minifyStyles',
+    'convertStyleToAttrs',
+    'convertColors',
+    'convertPathData',
+    'convertTransform',
+    'removeUnknownsAndDefaults',
+    'removeNonInheritableGroupAttrs',
+    'removeUselessStrokeAndFill',
+    'removeViewBox',
+    'cleanupIds',
+    'cleanupNumericValues',
+    'convertShapeToPath',
+    'moveElemsAttrsToGroup',
+    'moveGroupAttrsToElems',
+    'collapseGroups',
+    'removeRasterImages',
+    'mergePaths',
+    'convertEllipseToCircle',
+    'sortAttrs',
+    'sortDefsChildren',
+    'removeBlackFill',
   ];
 
-  const structurePlugins = [
-    'removeOffCanvasPaths', 'reusePaths'
-  ];
+  const structurePlugins = ['removeOffCanvasPaths', 'reusePaths'];
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -174,7 +195,10 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
           {/* Global Settings */}
           <section className="space-y-3">
             <h3 className="text-lg font-semibold">Global</h3>
-            <div className="flex items-center space-x-[15px]" title="Extract width and height as Pug variables">
+            <div
+              className="flex items-center space-x-[15px]"
+              title="Extract width and height as Pug variables"
+            >
               <Switch
                 id="sizeVars"
                 checked={enablePugSizeVars}
@@ -188,7 +212,11 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
               >
                 Size Vars
               </Label>
-            </div>            <div className="flex items-center space-x-[15px]" title={svgoPluginTooltips['removeSvgElement']}>
+            </div>{' '}
+            <div
+              className="flex items-center space-x-[15px]"
+              title={svgoPluginTooltips['removeSvgElement']}
+            >
               <Switch
                 id="removeSvgElement"
                 checked={isPluginEnabled('removeSvgElement')}
@@ -203,7 +231,10 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
                 {svgoPluginLabels['removeSvgElement']}
               </Label>
             </div>
-            <div className="flex items-center space-x-[15px]" title={svgoPluginTooltips['figmaCleanup']}>
+            <div
+              className="flex items-center space-x-[15px]"
+              title={svgoPluginTooltips['figmaCleanup']}
+            >
               <Switch
                 id="figmaCleanup"
                 checked={isPluginEnabled('figmaCleanup')}
@@ -223,10 +254,15 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
           {/* Precision Controls */}
           <section className="space-y-4">
             <h3 className="text-lg font-semibold">Precision</h3>
-            
+
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="floatPrecision" className="text-sm" style={{ color: '#C5C5C5' }} title="Number of decimal places for floating point values">
+                <Label
+                  htmlFor="floatPrecision"
+                  className="text-sm"
+                  style={{ color: '#C5C5C5' }}
+                  title="Number of decimal places for floating point values"
+                >
                   Float Precision: {svgoSettings.floatPrecision}
                 </Label>
               </div>
@@ -245,7 +281,12 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label htmlFor="transformPrecision" className="text-sm" style={{ color: '#C5C5C5' }} title="Number of decimal places for transformation matrices">
+                <Label
+                  htmlFor="transformPrecision"
+                  className="text-sm"
+                  style={{ color: '#C5C5C5' }}
+                  title="Number of decimal places for transformation matrices"
+                >
                   Transform Precision: {svgoSettings.transformPrecision}
                 </Label>
               </div>
@@ -267,8 +308,12 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
           <section className="space-y-3">
             <h3 className="text-lg font-semibold">Cleanup</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {cleanupPlugins.map(pluginName => (
-                <div key={pluginName} className="flex items-center space-x-[15px]" title={svgoPluginTooltips[pluginName] || ''}>
+              {cleanupPlugins.map((pluginName) => (
+                <div
+                  key={pluginName}
+                  className="flex items-center space-x-[15px]"
+                  title={svgoPluginTooltips[pluginName] || ''}
+                >
                   <Switch
                     id={pluginName}
                     checked={isPluginEnabled(pluginName)}
@@ -291,8 +336,12 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
           <section className="space-y-3">
             <h3 className="text-lg font-semibold">Attributes & Transformations</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {attributePlugins.map(pluginName => (
-                <div key={pluginName} className="flex items-center space-x-[15px]" title={svgoPluginTooltips[pluginName] || ''}>
+              {attributePlugins.map((pluginName) => (
+                <div
+                  key={pluginName}
+                  className="flex items-center space-x-[15px]"
+                  title={svgoPluginTooltips[pluginName] || ''}
+                >
                   <Switch
                     id={pluginName}
                     checked={isPluginEnabled(pluginName)}
@@ -315,8 +364,12 @@ export const SvgoSettingsDialog: React.FC<SvgoSettingsDialogProps> = ({ isOpen, 
           <section className="space-y-3">
             <h3 className="text-lg font-semibold">Structure</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {structurePlugins.map(pluginName => (
-                <div key={pluginName} className="flex items-center space-x-[15px]" title={svgoPluginTooltips[pluginName] || ''}>
+              {structurePlugins.map((pluginName) => (
+                <div
+                  key={pluginName}
+                  className="flex items-center space-x-[15px]"
+                  title={svgoPluginTooltips[pluginName] || ''}
+                >
                   <Switch
                     id={pluginName}
                     checked={isPluginEnabled(pluginName)}

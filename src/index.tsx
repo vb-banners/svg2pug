@@ -21,30 +21,26 @@ console.error = (...args: any[]) => {
   originalConsoleError.apply(console, args);
 };
 
-window.addEventListener('error', (e: ErrorEvent) => {
-  if (
-    e.message.includes(resizeObserverLoopErr) ||
-    e.message.includes(resizeObserverLoopErr2)
-  ) {
-    e.stopImmediatePropagation();
-    e.preventDefault();
-  }
-}, { capture: true });
+window.addEventListener(
+  'error',
+  (e: ErrorEvent) => {
+    if (e.message.includes(resizeObserverLoopErr) || e.message.includes(resizeObserverLoopErr2)) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+    }
+  },
+  { capture: true }
+);
 
 window.onerror = (message) => {
   const msg = typeof message === 'string' ? message : '';
-  if (
-    msg.includes(resizeObserverLoopErr) ||
-    msg.includes(resizeObserverLoopErr2)
-  ) {
+  if (msg.includes(resizeObserverLoopErr) || msg.includes(resizeObserverLoopErr2)) {
     return true;
   }
   return false;
 };
 
-const root = ReactDOM.createRoot(
-  document.getElementById('root') as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 
 root.render(
   <React.StrictMode>

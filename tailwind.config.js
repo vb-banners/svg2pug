@@ -59,7 +59,7 @@ module.exports = {
       },
       fontFamily: {
         code: ['Fira Code', 'monospace'],
-        sans: ['"Plus Jakarta Sans"', 'Geist', 'Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+        sans: ['Inter', 'Geist', 'system-ui', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": {

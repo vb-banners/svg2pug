@@ -12,53 +12,60 @@ import type * as monaco from 'monaco-editor';
 import { Monaco } from '@monaco-editor/react';
 
 export const EditorPane: React.FC = () => {
-  const openFiles = useAppStore(state => state.openFiles);
-  const activeFileId = useAppStore(state => state.activeFileId);
-  const HTMLCode = useAppStore(state => state.HTMLCode);
-  const JADECode = useAppStore(state => state.JADECode);
-  const setHTMLCode = useAppStore(state => state.setHTMLCode);
-  const updateFileContent = useAppStore(state => state.updateFileContent);
-  const pugWidthRatio = useAppStore(state => state.pugWidthRatio);
-  const tabSize = useAppStore(state => state.tabSize);
-  const useSoftTabs = useAppStore(state => state.useSoftTabs);
-  const enableSvgIdToClass = useAppStore(state => state.enableSvgIdToClass);
-  const enableCommonClasses = useAppStore(state => state.enableCommonClasses);
-  const enablePugSizeVars = useAppStore(state => state.enablePugSizeVars);
-  const enableQuickCopy = useAppStore(state => state.enableQuickCopy);
-  const showPreview = useAppStore(state => state.showPreview);
-  const previewSplitRatio = useAppStore(state => state.previewSplitRatio);
-  const setPreviewSplitRatio = useAppStore(state => state.setPreviewSplitRatio);
-  const svgoSettings = useAppStore(state => state.svgoSettings);
-  const isSvgoEnabled = useAppStore(state => state.isSvgoEnabled);
+  const openFiles = useAppStore((state) => state.openFiles);
+  const activeFileId = useAppStore((state) => state.activeFileId);
+  const HTMLCode = useAppStore((state) => state.HTMLCode);
+  const JADECode = useAppStore((state) => state.JADECode);
+  const setHTMLCode = useAppStore((state) => state.setHTMLCode);
+  const updateFileContent = useAppStore((state) => state.updateFileContent);
+  const pugWidthRatio = useAppStore((state) => state.pugWidthRatio);
+  const tabSize = useAppStore((state) => state.tabSize);
+  const useSoftTabs = useAppStore((state) => state.useSoftTabs);
+  const enableSvgIdToClass = useAppStore((state) => state.enableSvgIdToClass);
+  const enableCommonClasses = useAppStore((state) => state.enableCommonClasses);
+  const enablePugSizeVars = useAppStore((state) => state.enablePugSizeVars);
+  const enableQuickCopy = useAppStore((state) => state.enableQuickCopy);
+  const showPreview = useAppStore((state) => state.showPreview);
+  const previewSplitRatio = useAppStore((state) => state.previewSplitRatio);
+  const setPreviewSplitRatio = useAppStore((state) => state.setPreviewSplitRatio);
+  const svgoSettings = useAppStore((state) => state.svgoSettings);
+  const isSvgoEnabled = useAppStore((state) => state.isSvgoEnabled);
   const removeSvgParentEnabled = svgoSettings?.plugins?.removeSvgElement === true;
-  const hasHydrated = useAppStore(state => state._hasHydrated);
+  const hasHydrated = useAppStore((state) => state._hasHydrated);
 
   const { convertHtmlToPug, convertPugToHtml } = useConversion();
 
   // Memoize editor options to ensure they trigger updates when changed
-  const editorOptions = useMemo(() => ({
-    tabSize,
-    insertSpaces: useSoftTabs,
-    minimap: { enabled: false },
-    scrollBeyondLastLine: false,
-    wordWrap: 'off' as const,
-    lineNumbers: 'on' as const,
-    folding: true,
-    automaticLayout: true,
-  }), [tabSize, useSoftTabs]);
+  const editorOptions = useMemo(
+    () => ({
+      tabSize,
+      insertSpaces: useSoftTabs,
+      minimap: { enabled: false },
+      scrollBeyondLastLine: false,
+      wordWrap: 'off' as const,
+      lineNumbers: 'on' as const,
+      folding: true,
+      automaticLayout: true,
+    }),
+    [tabSize, useSoftTabs]
+  );
 
-  const pugEditorOptions = useMemo(() => ({
-    ...editorOptions,
-  }), [editorOptions]);
+  const pugEditorOptions = useMemo(
+    () => ({
+      ...editorOptions,
+    }),
+    [editorOptions]
+  );
 
   // Get active file content or fall back to global state
-  const activeFile = openFiles.find(f => f.id === activeFileId);
+  const activeFile = openFiles.find((f) => f.id === activeFileId);
   const displayHTMLCode = activeFile ? activeFile.htmlContent : HTMLCode;
   const displayJADECode = activeFile ? activeFile.pugContent : JADECode;
 
   const htmlEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const pugEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [pugEditorInstance, setPugEditorInstance] = React.useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [pugEditorInstance, setPugEditorInstance] =
+    React.useState<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [pugMonacoInstance, setPugMonacoInstance] = React.useState<Monaco | null>(null);
   const [previewLayout, setPreviewLayout] = React.useState<'vertical' | 'horizontal'>('vertical');
   const [highlightLines, setHighlightLines] = React.useState<number[]>([]);
@@ -77,19 +84,15 @@ export const EditorPane: React.FC = () => {
   useEffect(() => {
     (window as any).__monacoEditors = {
       html: htmlEditorRef.current,
-      pug: pugEditorRef.current
+      pug: pugEditorRef.current,
     };
     return () => {
       delete (window as any).__monacoEditors;
     };
   }, [htmlEditorRef.current, pugEditorRef.current]);
 
-  const {
-    sectionRef,
-    handleSplitMouseDown,
-    getHtmlEditorStyle,
-    getPugEditorStyle,
-  } = useSplitPane();
+  const { sectionRef, handleSplitMouseDown, getHtmlEditorStyle, getPugEditorStyle } =
+    useSplitPane();
 
   // Keep both editors aligned to the same relative scroll position
   const syncScrollPositions = useCallback((source: 'html' | 'pug') => {
@@ -136,40 +139,46 @@ export const EditorPane: React.FC = () => {
     syncScrollPositions('pug');
   }, [syncScrollPositions]);
 
-  const handleHTMLMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor) => {
-    htmlEditorRef.current = editor;
-    editor.onDidScrollChange(handleHTMLScroll);
-    // Force layout after mount to ensure content is visible
-    setTimeout(() => editor.layout(), 0);
-  }, [handleHTMLScroll]);
+  const handleHTMLMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor) => {
+      htmlEditorRef.current = editor;
+      editor.onDidScrollChange(handleHTMLScroll);
+      // Force layout after mount to ensure content is visible
+      setTimeout(() => editor.layout(), 0);
+    },
+    [handleHTMLScroll]
+  );
 
-  const handlePugMount = useCallback((editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
-    pugEditorRef.current = editor;
-    setPugEditorInstance(editor); // Update state to trigger useQuickCopy
-    setPugMonacoInstance(monacoInstance);
-    editor.onDidScrollChange(handlePugScroll);
-    
-    // Track cursor position and selection changes for highlighting
-    const updateHighlight = () => {
-      const selections = editor.getSelections();
-      if (selections && selections.length > 0) {
-        // Map each selection to its start line number
-        // This works for both single cursor (start=end) and block selection (start=top of block)
-        const lines = selections.map(s => s.startLineNumber);
-        setHighlightLines(lines);
-        setIsCopied(false); // Reset copied state when selection changes
-      } else {
-        setHighlightLines([]);
-        setIsCopied(false);
-      }
-    };
+  const handlePugMount = useCallback(
+    (editor: monaco.editor.IStandaloneCodeEditor, monacoInstance: Monaco) => {
+      pugEditorRef.current = editor;
+      setPugEditorInstance(editor); // Update state to trigger useQuickCopy
+      setPugMonacoInstance(monacoInstance);
+      editor.onDidScrollChange(handlePugScroll);
 
-    editor.onDidChangeCursorPosition(updateHighlight);
-    editor.onDidChangeCursorSelection(updateHighlight);
+      // Track cursor position and selection changes for highlighting
+      const updateHighlight = () => {
+        const selections = editor.getSelections();
+        if (selections && selections.length > 0) {
+          // Map each selection to its start line number
+          // This works for both single cursor (start=end) and block selection (start=top of block)
+          const lines = selections.map((s) => s.startLineNumber);
+          setHighlightLines(lines);
+          setIsCopied(false); // Reset copied state when selection changes
+        } else {
+          setHighlightLines([]);
+          setIsCopied(false);
+        }
+      };
 
-    // Force layout after mount to ensure content is visible
-    setTimeout(() => editor.layout(), 0);
-  }, [handlePugScroll]);
+      editor.onDidChangeCursorPosition(updateHighlight);
+      editor.onDidChangeCursorSelection(updateHighlight);
+
+      // Force layout after mount to ensure content is visible
+      setTimeout(() => editor.layout(), 0);
+    },
+    [handlePugScroll]
+  );
 
   const handleCopy = useCallback(() => {
     setIsCopied(true);
@@ -259,12 +268,23 @@ export const EditorPane: React.FC = () => {
         enablePugSizeVars,
         useSoftTabs,
         tabSize,
-        fileName: file.name
+        fileName: file.name,
       });
 
       state.updateFileContent(file.id, htmlContent, pugContent);
     });
-  }, [removeSvgParentEnabled, hasHydrated, isSvgoEnabled, svgoSettings, enableSvgIdToClass, enableCommonClasses, enablePugSizeVars, useSoftTabs, tabSize, convertHtmlToPug]);
+  }, [
+    removeSvgParentEnabled,
+    hasHydrated,
+    isSvgoEnabled,
+    svgoSettings,
+    enableSvgIdToClass,
+    enableCommonClasses,
+    enablePugSizeVars,
+    useSoftTabs,
+    tabSize,
+    convertHtmlToPug,
+  ]);
 
   // Force layout when content changes (after hydration or file upload)
   useEffect(() => {
@@ -293,8 +313,8 @@ export const EditorPane: React.FC = () => {
         enablePugSizeVars,
         useSoftTabs,
         tabSize,
-        fileName: activeFile?.name || null
-      }).then(pugContent => {
+        fileName: activeFile?.name || null,
+      }).then((pugContent) => {
         if (activeFile) {
           updateFileContent(activeFile.id, displayHTMLCode, pugContent);
         } else {
@@ -302,63 +322,78 @@ export const EditorPane: React.FC = () => {
         }
       });
     }
-  }, [isSvgoEnabled, svgoSettings, enableSvgIdToClass, enableCommonClasses, enablePugSizeVars, useSoftTabs, tabSize]);
+  }, [
+    isSvgoEnabled,
+    svgoSettings,
+    enableSvgIdToClass,
+    enableCommonClasses,
+    enablePugSizeVars,
+    useSoftTabs,
+    tabSize,
+  ]);
 
-  const handleContentSizeChange = useCallback((width: number, height: number) => {
-    const currentFileId = activeFileId || 'global';
-    
-    // Determine layout based on aspect ratio and size
-    const isWide = width > 320 && height < width;
-    const newLayout = isWide ? 'horizontal' : 'vertical';
-    
-    // Check if we should update
-    const fileChanged = lastAutoSizedFileIdRef.current !== currentFileId;
-    const dimensionsChanged = !lastAutoSizedDimensionsRef.current || 
-        Math.abs(lastAutoSizedDimensionsRef.current.width - width) > 1 || 
+  const handleContentSizeChange = useCallback(
+    (width: number, height: number) => {
+      const currentFileId = activeFileId || 'global';
+
+      // Determine layout based on aspect ratio and size
+      const isWide = width > 320 && height < width;
+      const newLayout = isWide ? 'horizontal' : 'vertical';
+
+      // Check if we should update
+      const fileChanged = lastAutoSizedFileIdRef.current !== currentFileId;
+      const dimensionsChanged =
+        !lastAutoSizedDimensionsRef.current ||
+        Math.abs(lastAutoSizedDimensionsRef.current.width - width) > 1 ||
         Math.abs(lastAutoSizedDimensionsRef.current.height - height) > 1;
 
-    if (!fileChanged && !dimensionsChanged) {
-      return;
-    }
+      if (!fileChanged && !dimensionsChanged) {
+        return;
+      }
 
-    setPreviewLayout(newLayout);
+      setPreviewLayout(newLayout);
 
-    if (width <= 0) return;
-    if (!sectionRef.current) return;
+      if (width <= 0) return;
+      if (!sectionRef.current) return;
 
-    const sectionRect = sectionRef.current.getBoundingClientRect();
-    const leftSectionWidth = sectionRect.width * (1 - pugWidthRatio);
-    const leftSectionHeight = sectionRect.height;
-    
-    let targetRatio;
+      const sectionRect = sectionRef.current.getBoundingClientRect();
+      const leftSectionWidth = sectionRect.width * (1 - pugWidthRatio);
+      const leftSectionHeight = sectionRect.height;
 
-    if (newLayout === 'vertical') {
+      let targetRatio;
+
+      if (newLayout === 'vertical') {
         // Target width + padding (e.g. 40px for scrollbars/padding)
         const targetWidth = width + 40;
         targetRatio = targetWidth / leftSectionWidth;
-    } else {
+      } else {
         // Target height + padding
         const targetHeight = height + 40;
         targetRatio = targetHeight / leftSectionHeight;
-    }
-    
-    // Clamp ratio
-    targetRatio = Math.max(0.2, Math.min(0.8, targetRatio));
-    
-    setPreviewSplitRatio(targetRatio);
-    lastAutoSizedFileIdRef.current = currentFileId;
-    lastAutoSizedDimensionsRef.current = { width, height };
-  }, [activeFileId, pugWidthRatio, setPreviewSplitRatio]);
+      }
+
+      // Clamp ratio
+      targetRatio = Math.max(0.2, Math.min(0.8, targetRatio));
+
+      setPreviewSplitRatio(targetRatio);
+      lastAutoSizedFileIdRef.current = currentFileId;
+      lastAutoSizedDimensionsRef.current = { width, height };
+    },
+    [activeFileId, pugWidthRatio, setPreviewSplitRatio]
+  );
 
   // Handle resizing of the preview pane
   const isPreviewResizingRef = useRef(false);
 
-  const handlePreviewResizeMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isPreviewResizingRef.current = true;
-    document.body.style.cursor = previewLayout === 'vertical' ? 'col-resize' : 'row-resize';
-    document.body.style.userSelect = 'none';
-  }, [previewLayout]);
+  const handlePreviewResizeMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      isPreviewResizingRef.current = true;
+      document.body.style.cursor = previewLayout === 'vertical' ? 'col-resize' : 'row-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [previewLayout]
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -372,16 +407,16 @@ export const EditorPane: React.FC = () => {
       let newRatio;
 
       if (previewLayout === 'vertical') {
-          // Calculate new ratio based on mouse position relative to the left section
-          const mouseX = e.clientX - leftSectionRect.left;
-          // Ratio within the left section - this becomes the preview's width percentage
-          // Since preview is on the right, its width is (1 - splitPosition)
-          newRatio = 1 - (mouseX / leftSectionRect.width);
+        // Calculate new ratio based on mouse position relative to the left section
+        const mouseX = e.clientX - leftSectionRect.left;
+        // Ratio within the left section - this becomes the preview's width percentage
+        // Since preview is on the right, its width is (1 - splitPosition)
+        newRatio = 1 - mouseX / leftSectionRect.width;
       } else {
-          // Calculate new ratio based on mouse position relative to the left section height
-          const mouseY = e.clientY - leftSectionRect.top;
-          // Preview is at the bottom
-          newRatio = 1 - (mouseY / leftSectionRect.height);
+        // Calculate new ratio based on mouse position relative to the left section height
+        const mouseY = e.clientY - leftSectionRect.top;
+        // Preview is at the bottom
+        newRatio = 1 - mouseY / leftSectionRect.height;
       }
 
       // Clamp ratio between 0.2 and 0.8
@@ -426,17 +461,18 @@ export const EditorPane: React.FC = () => {
     };
 
     let content = displayHTMLCode || '';
-    
+
     if (displayJADECode) {
       const dimensions = extractSvgDimensions(displayHTMLCode || '');
       const locals = dimensions ? { width: dimensions.width, height: dimensions.height } : {};
 
-      let debugHtml = convertPugToHtml(displayJADECode, {
-        useSoftTabs,
-        tabSize,
-        injectDebugInfo: true,
-        locals
-      }) || '';
+      let debugHtml =
+        convertPugToHtml(displayJADECode, {
+          useSoftTabs,
+          tabSize,
+          injectDebugInfo: true,
+          locals,
+        }) || '';
 
       if (debugHtml && !/<svg[\s\S]*?>/i.test(debugHtml)) {
         const svgAttrs = extractSvgAttributes(displayHTMLCode || '');
@@ -447,9 +483,17 @@ export const EditorPane: React.FC = () => {
         content = debugHtml;
       }
     }
-    
+
     setPreviewContent(content);
-  }, [activeFileId, displayJADECode, displayHTMLCode, convertPugToHtml, useSoftTabs, tabSize, svgoSettings]);
+  }, [
+    activeFileId,
+    displayJADECode,
+    displayHTMLCode,
+    convertPugToHtml,
+    useSoftTabs,
+    tabSize,
+    svgoSettings,
+  ]);
 
   // Auto-copy current Pug when a tab becomes active (including initial load)
   useEffect(() => {
@@ -466,19 +510,25 @@ export const EditorPane: React.FC = () => {
     // Check if document has focus before trying to write to clipboard
     if (!document.hasFocus()) return;
 
-    navigator.clipboard.writeText(pugToCopy)
+    navigator.clipboard
+      .writeText(pugToCopy)
       .then(() => {
         lastCopiedContextRef.current = contextKey;
         const lineCount = pugToCopy.split('\n').length;
         const charCount = pugToCopy.length;
         const fileLabel = activeFile?.name || 'Untitled';
-        useAppStore.getState().setStatusMessage(
-          `Copied Pug for ${fileLabel}: ${lineCount} line${lineCount !== 1 ? 's' : ''}, ${charCount} char${charCount !== 1 ? 's' : ''}`,
-          15000
-        );
+        useAppStore
+          .getState()
+          .setStatusMessage(
+            `Copied Pug for ${fileLabel}: ${lineCount} line${lineCount !== 1 ? 's' : ''}, ${charCount} char${charCount !== 1 ? 's' : ''}`,
+            15000
+          );
       })
-      .catch(() => {
-        // Silently fail if clipboard write fails (e.g. not focused)
+      .catch((error) => {
+        // Only show toast if it's a real error (not just focus loss)
+        if (document.hasFocus()) {
+          console.warn('Clipboard write failed:', error);
+        }
       });
   }, [activeFileId, displayJADECode, hasHydrated, activeFile]);
 
@@ -493,8 +543,18 @@ export const EditorPane: React.FC = () => {
         <div
           className={`flex flex-col overflow-hidden`}
           style={{
-            width: previewLayout === 'horizontal' ? '100%' : (showPreview ? `${(1 - previewSplitRatio) * 100}%` : '100%'),
-            height: previewLayout === 'horizontal' ? (showPreview ? `${(1 - previewSplitRatio) * 100}%` : '100%') : '100%',
+            width:
+              previewLayout === 'horizontal'
+                ? '100%'
+                : showPreview
+                  ? `${(1 - previewSplitRatio) * 100}%`
+                  : '100%',
+            height:
+              previewLayout === 'horizontal'
+                ? showPreview
+                  ? `${(1 - previewSplitRatio) * 100}%`
+                  : '100%'
+                : '100%',
           }}
         >
           <div className="flex-1 overflow-hidden">
@@ -521,17 +581,20 @@ export const EditorPane: React.FC = () => {
             {/* Resizer Handle */}
             <div
               className={`absolute z-10 flex items-center justify-center hover:bg-primary/20 transition-colors ${
-                previewLayout === 'vertical' 
-                  ? 'w-1 h-full cursor-col-resize top-0' 
+                previewLayout === 'vertical'
+                  ? 'w-1 h-full cursor-col-resize top-0'
                   : 'h-1 w-full cursor-row-resize left-0'
               }`}
               style={{
-                [previewLayout === 'vertical' ? 'left' : 'top']: `${(1 - previewSplitRatio) * 100}%`,
-                transform: previewLayout === 'vertical' ? 'translateX(-50%)' : 'translateY(-50%)'
+                [previewLayout === 'vertical' ? 'left' : 'top']:
+                  `${(1 - previewSplitRatio) * 100}%`,
+                transform: previewLayout === 'vertical' ? 'translateX(-50%)' : 'translateY(-50%)',
               }}
               onMouseDown={handlePreviewResizeMouseDown}
             >
-               <div className={`bg-border ${previewLayout === 'vertical' ? 'w-px h-8' : 'h-px w-8'}`} />
+              <div
+                className={`bg-border ${previewLayout === 'vertical' ? 'w-px h-8' : 'h-px w-8'}`}
+              />
             </div>
 
             <div
@@ -541,8 +604,8 @@ export const EditorPane: React.FC = () => {
                 height: previewLayout === 'horizontal' ? `${previewSplitRatio * 100}%` : '100%',
               }}
             >
-              <PreviewPane 
-                htmlContent={previewContent} 
+              <PreviewPane
+                htmlContent={previewContent}
                 originalHtml={displayHTMLCode || ''}
                 highlightLines={highlightLines}
                 isCopied={isCopied}
@@ -564,10 +627,7 @@ export const EditorPane: React.FC = () => {
       </div>
 
       {/* Right Section: Pug Editor */}
-      <div
-        className="flex flex-col overflow-hidden"
-        style={getPugEditorStyle()}
-      >
+      <div className="flex flex-col overflow-hidden" style={getPugEditorStyle()}>
         <div className="flex-1 overflow-hidden relative">
           <MonacoEditor
             key={`pug-${activeFileId || 'default'}`}

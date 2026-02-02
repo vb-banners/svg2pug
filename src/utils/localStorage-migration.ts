@@ -90,5 +90,5 @@ export const migrateLocalStorageData = () => {
  * Check if migration is needed (any of the old keys exist)
  */
 export const needsMigration = (): boolean => {
-  return Object.values(STORAGE_KEYS).some(key => localStorage.getItem(key) !== null);
+  return Object.values(STORAGE_KEYS).some((key) => localStorage.getItem(key) !== null);
 };

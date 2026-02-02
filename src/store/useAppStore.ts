@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { AppState, CursorPosition, SelectionInfo, CompressionStats } from '../types/AppState';
+import {
+  AppState,
+  CursorPosition,
+  SelectionInfo,
+  CompressionStats,
+  Toast,
+} from '../types/AppState';
 import { SvgoSettings } from '../types/SvgoSettings';
 import { FileTab, ControlsPosition } from '../types/FileTab';
 import { getDefaultSvgoSettings, mergeSvgoSettings } from '../svgo-config';
@@ -11,15 +17,15 @@ interface AppStore extends AppState {
   // Hydration state
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
-  
+
   // Actions for code content
   setHTMLCode: (code: string) => void;
   setJADECode: (code: string) => void;
-  
+
   // Actions for editor settings
   setTabSize: (size: number) => void;
   setUseSoftTabs: (useSoft: boolean) => void;
-  
+
   // Actions for feature toggles
   setEnableSvgIdToClass: (enabled: boolean) => void;
   setEnableCommonClasses: (enabled: boolean) => void;
@@ -28,13 +34,13 @@ interface AppStore extends AppState {
   setShowPreview: (show: boolean) => void;
   setPreviewSplitRatio: (ratio: number) => void;
   setPreviewScale: (scale: number) => void;
-  
+
   // Actions for UI state
   setControlsPosition: (position: ControlsPosition | null) => void;
   setIsControlsDragging: (isDragging: boolean) => void;
   setPugWidthRatio: (ratio: number) => void;
   setIsResizingSplit: (isResizing: boolean) => void;
-  
+
   // Actions for SVGO
   setSvgoSettings: (settings: SvgoSettings) => void;
   setIsSvgoEnabled: (enabled: boolean) => void;
@@ -42,10 +48,10 @@ interface AppStore extends AppState {
   toggleSvgoPlugin: (pluginId: string, enabled: boolean) => void;
   updateSvgoPrecision: (key: 'floatPrecision' | 'transformPrecision', value: number) => void;
   toggleSvgoMultipass: (enabled: boolean) => void;
-  
+
   // Actions for help menu
   setIsHelpMenuOpen: (isOpen: boolean) => void;
-  
+
   // Actions for file management
   addFile: (file: FileTab) => void;
   addFiles: (files: FileTab[]) => void;
@@ -60,7 +66,7 @@ interface AppStore extends AppState {
   duplicateFile: (fileId: string) => void;
   closeOtherFiles: (fileId: string) => void;
   closeAllFiles: () => void;
-  
+
   // Status bar actions
   setActiveEditor: (editor: 'html' | 'pug' | null) => void;
   setHtmlCursorPosition: (position: CursorPosition | null) => void;
@@ -69,7 +75,17 @@ interface AppStore extends AppState {
   setPugSelectionInfo: (info: SelectionInfo | null) => void;
   setCompressionStats: (stats: CompressionStats) => void;
   setStatusMessage: (message: string | null, durationMs?: number) => void;
-  
+
+  // Toast actions
+  addToast: (toast: Omit<Toast, 'id'>) => string;
+  removeToast: (id: string) => void;
+  clearToasts: () => void;
+
+  // Loading state actions
+  setIsScriptsLoading: (loading: boolean) => void;
+  setIsFileProcessing: (processing: boolean) => void;
+  setProcessingFileCount: (count: number) => void;
+
   // Computed selectors
   getActiveFile: () => FileTab | null;
 }
@@ -106,7 +122,7 @@ export const useAppStore = create<AppStore>()(
       dragOverTabId: null,
       tabBarScrollPosition: migratedData.tabBarScrollPosition || 0,
       _hasHydrated: false,
-      
+
       // Status bar state (transient - not persisted)
       activeEditor: null,
       htmlCursorPosition: null,
@@ -115,6 +131,14 @@ export const useAppStore = create<AppStore>()(
       pugSelectionInfo: null,
       compressionStats: { htmlGzipSize: 0, pugGzipSize: 0 },
       statusMessage: null,
+
+      // Toast state (transient - not persisted)
+      toasts: [],
+
+      // Loading state (transient - not persisted)
+      isScriptsLoading: true,
+      isFileProcessing: false,
+      processingFileCount: 0,
 
       // Hydration actions
       setHasHydrated: (state: boolean) => set({ _hasHydrated: state }),
@@ -137,7 +161,8 @@ export const useAppStore = create<AppStore>()(
       setPreviewScale: (scale: number) => set({ previewScale: scale }),
 
       // UI state actions
-      setControlsPosition: (position: ControlsPosition | null) => set({ controlsPosition: position }),
+      setControlsPosition: (position: ControlsPosition | null) =>
+        set({ controlsPosition: position }),
       setIsControlsDragging: (isDragging: boolean) => set({ isControlsDragging: isDragging }),
       setPugWidthRatio: (ratio: number) => set({ pugWidthRatio: ratio }),
       setIsResizingSplit: (isResizing: boolean) => set({ isResizingSplit: isResizing }),
@@ -146,7 +171,7 @@ export const useAppStore = create<AppStore>()(
       setSvgoSettings: (settings: SvgoSettings) => set({ svgoSettings: settings }),
       setIsSvgoEnabled: (enabled: boolean) => set({ isSvgoEnabled: enabled }),
       setIsSvgoMenuOpen: (isOpen: boolean) => set({ isSvgoMenuOpen: isOpen }),
-      
+
       toggleSvgoPlugin: (pluginId: string, enabled: boolean) =>
         set((state) => ({
           svgoSettings: {
@@ -157,7 +182,7 @@ export const useAppStore = create<AppStore>()(
             },
           },
         })),
-      
+
       updateSvgoPrecision: (key: 'floatPrecision' | 'transformPrecision', value: number) =>
         set((state) => ({
           svgoSettings: {
@@ -165,7 +190,7 @@ export const useAppStore = create<AppStore>()(
             [key]: value,
           },
         })),
-      
+
       toggleSvgoMultipass: (enabled: boolean) =>
         set((state) => ({
           svgoSettings: {
@@ -185,7 +210,7 @@ export const useAppStore = create<AppStore>()(
           HTMLCode: file.htmlContent,
           JADECode: file.pugContent,
         })),
-      
+
       addFiles: (files: FileTab[]) =>
         set((state) => {
           const firstFile = files.length > 0 ? files[0] : null;
@@ -196,14 +221,14 @@ export const useAppStore = create<AppStore>()(
             JADECode: firstFile ? firstFile.pugContent : state.JADECode,
           };
         }),
-      
+
       removeFile: (fileId: string) =>
         set((state) => {
           const newFiles = state.openFiles.filter((f) => f.id !== fileId);
           let newActiveId = state.activeFileId;
           let newHTMLCode = state.HTMLCode;
           let newJADECode = state.JADECode;
-          
+
           if (state.activeFileId === fileId) {
             if (newFiles.length > 0) {
               const removedIndex = state.openFiles.findIndex((f) => f.id === fileId);
@@ -218,7 +243,7 @@ export const useAppStore = create<AppStore>()(
               newJADECode = defaultJADECode || '';
             }
           }
-          
+
           return {
             openFiles: newFiles,
             activeFileId: newActiveId,
@@ -226,7 +251,7 @@ export const useAppStore = create<AppStore>()(
             JADECode: newJADECode || '',
           };
         }),
-      
+
       setActiveFile: (fileId: string | null) =>
         set((state) => {
           const file = state.openFiles.find((f) => f.id === fileId);
@@ -239,15 +264,13 @@ export const useAppStore = create<AppStore>()(
           }
           return { activeFileId: fileId };
         }),
-      
+
       updateFileContent: (fileId: string, htmlContent: string, pugContent: string) =>
         set((state) => {
           const updatedFiles = state.openFiles.map((file) =>
-            file.id === fileId
-              ? { ...file, htmlContent, pugContent }
-              : file
+            file.id === fileId ? { ...file, htmlContent, pugContent } : file
           );
-          
+
           // If updating the active file, also update global state
           if (state.activeFileId === fileId) {
             return {
@@ -256,47 +279,45 @@ export const useAppStore = create<AppStore>()(
               JADECode: pugContent,
             };
           }
-          
+
           return { openFiles: updatedFiles };
         }),
-      
+
       updateFileName: (fileId: string, name: string) =>
         set((state) => {
           const updatedFiles = state.openFiles.map((file) =>
-            file.id === fileId
-              ? { ...file, name }
-              : file
+            file.id === fileId ? { ...file, name } : file
           );
           return { openFiles: updatedFiles };
         }),
-      
+
       reorderFiles: (fileIds: string[]) =>
         set((state) => {
           const fileMap = new Map(state.openFiles.map((f) => [f.id, f]));
           const reordered = fileIds.map((id) => fileMap.get(id)).filter(Boolean) as FileTab[];
           return { openFiles: reordered };
         }),
-      
+
       setDraggedTabId: (tabId: string | null) => set({ draggedTabId: tabId }),
       setDragOverTabId: (tabId: string | null) => set({ dragOverTabId: tabId }),
       setTabBarScrollPosition: (position: number) => set({ tabBarScrollPosition: position }),
-      
+
       duplicateFile: (fileId: string) =>
         set((state) => {
           const fileToDuplicate = state.openFiles.find((f) => f.id === fileId);
           if (!fileToDuplicate) return state;
-          
+
           const newFile: FileTab = {
             id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: `${fileToDuplicate.name} (copy)`,
             htmlContent: fileToDuplicate.htmlContent,
             pugContent: fileToDuplicate.pugContent,
           };
-          
+
           const fileIndex = state.openFiles.findIndex((f) => f.id === fileId);
           const newFiles = [...state.openFiles];
           newFiles.splice(fileIndex + 1, 0, newFile);
-          
+
           return {
             openFiles: newFiles,
             activeFileId: newFile.id,
@@ -304,12 +325,12 @@ export const useAppStore = create<AppStore>()(
             JADECode: newFile.pugContent,
           };
         }),
-      
+
       closeOtherFiles: (fileId: string) =>
         set((state) => {
           const fileToKeep = state.openFiles.find((f) => f.id === fileId);
           if (!fileToKeep) return state;
-          
+
           return {
             openFiles: [fileToKeep],
             activeFileId: fileId,
@@ -317,7 +338,7 @@ export const useAppStore = create<AppStore>()(
             JADECode: fileToKeep.pugContent,
           };
         }),
-      
+
       closeAllFiles: () =>
         set({
           openFiles: [],
@@ -325,11 +346,13 @@ export const useAppStore = create<AppStore>()(
           HTMLCode: defaultHTMLCode || '',
           JADECode: defaultJADECode || '',
         }),
-      
+
       // Status bar actions
       setActiveEditor: (editor: 'html' | 'pug' | null) => set({ activeEditor: editor }),
-      setHtmlCursorPosition: (position: CursorPosition | null) => set({ htmlCursorPosition: position }),
-      setPugCursorPosition: (position: CursorPosition | null) => set({ pugCursorPosition: position }),
+      setHtmlCursorPosition: (position: CursorPosition | null) =>
+        set({ htmlCursorPosition: position }),
+      setPugCursorPosition: (position: CursorPosition | null) =>
+        set({ pugCursorPosition: position }),
       setHtmlSelectionInfo: (info: SelectionInfo | null) => set({ htmlSelectionInfo: info }),
       setPugSelectionInfo: (info: SelectionInfo | null) => set({ pugSelectionInfo: info }),
       setCompressionStats: (stats: CompressionStats) => set({ compressionStats: stats }),
@@ -339,6 +362,41 @@ export const useAppStore = create<AppStore>()(
           setTimeout(() => set({ statusMessage: null }), durationMs);
         }
       },
+
+      // Toast actions
+      addToast: (toast: Omit<Toast, 'id'>) => {
+        const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newToast: Toast = { ...toast, id };
+        const duration = toast.duration ?? 5000;
+
+        set((state) => {
+          // Limit to max 5 toasts
+          const existingToasts = state.toasts.slice(-4);
+          return { toasts: [...existingToasts, newToast] };
+        });
+
+        if (duration > 0) {
+          setTimeout(() => {
+            set((state) => ({
+              toasts: state.toasts.filter((t) => t.id !== id),
+            }));
+          }, duration);
+        }
+
+        return id;
+      },
+
+      removeToast: (id: string) =>
+        set((state) => ({
+          toasts: state.toasts.filter((t) => t.id !== id),
+        })),
+
+      clearToasts: () => set({ toasts: [] }),
+
+      // Loading state actions
+      setIsScriptsLoading: (loading: boolean) => set({ isScriptsLoading: loading }),
+      setIsFileProcessing: (processing: boolean) => set({ isFileProcessing: processing }),
+      setProcessingFileCount: (count: number) => set({ processingFileCount: count }),
 
       // Computed selectors
       getActiveFile: () => {
@@ -356,14 +414,14 @@ export const useAppStore = create<AppStore>()(
       },
       merge: (persistedState: any, currentState: AppStore) => {
         if (!persistedState) return currentState;
-        
+
         const mergedState = { ...currentState, ...persistedState };
-        
+
         // Ensure svgoSettings are correctly merged with defaults to handle new properties
         if (persistedState.svgoSettings) {
-           mergedState.svgoSettings = mergeSvgoSettings(persistedState.svgoSettings);
+          mergedState.svgoSettings = mergeSvgoSettings(persistedState.svgoSettings);
         }
-        
+
         return mergedState;
       },
       partialize: (state) => ({

@@ -4,7 +4,7 @@ import { useAppStore } from '../store/useAppStore';
 
 /**
  * Hook to automatically copy selected text to clipboard when Quick Copy is disabled
- * 
+ *
  * When Quick Copy is disabled:
  * - Selecting text and releasing mouse button copies the selection to clipboard
  * - Shows feedback message indicating what was copied
@@ -56,14 +56,17 @@ export const useAutoCopyOnSelect = (
         }
 
         // Copy to clipboard
-        navigator.clipboard.writeText(selectedText)
+        navigator.clipboard
+          .writeText(selectedText)
           .then(() => {
             const lineCount = selectedText.split('\n').length;
             const charCount = selectedText.length;
-            useAppStore.getState().setStatusMessage(
-              `Copied ${lineCount} line${lineCount !== 1 ? 's' : ''} (${charCount} char${charCount !== 1 ? 's' : ''})`,
-              15000
-            );
+            useAppStore
+              .getState()
+              .setStatusMessage(
+                `Copied ${lineCount} line${lineCount !== 1 ? 's' : ''} (${charCount} char${charCount !== 1 ? 's' : ''})`,
+                15000
+              );
             onCopy?.();
           })
           .catch(() => {

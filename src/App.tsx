@@ -5,6 +5,8 @@ import { FloatingControls } from './Components/FloatingControls';
 import { SvgoSettingsDialog } from './Components/SvgoSettingsDialog';
 import { HelpDialog } from './Components/HelpDialog';
 import { StatusBar } from './Components/StatusBar';
+import { ToastContainer } from './Components/ToastContainer';
+import { LoadingOverlay } from './Components/LoadingOverlay';
 import { useAppStore } from './store/useAppStore';
 import { useConversion } from './hooks/useConversion';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -12,31 +14,33 @@ import { usePasteHandler } from './hooks/usePasteHandler';
 import './styles/globals.css';
 
 const App: React.FC = () => {
-  const [, setScriptsLoaded] = React.useState(false);
-  const HTMLCode = useAppStore(state => state.HTMLCode);
-  const openFiles = useAppStore(state => state.openFiles);
-  const isSvgoMenuOpen = useAppStore(state => state.isSvgoMenuOpen);
-  const isHelpMenuOpen = useAppStore(state => state.isHelpMenuOpen);
-  const isSvgoEnabled = useAppStore(state => state.isSvgoEnabled);
-  const svgoSettings = useAppStore(state => state.svgoSettings);
-  const enableSvgIdToClass = useAppStore(state => state.enableSvgIdToClass);
-  const enableCommonClasses = useAppStore(state => state.enableCommonClasses);
-  const enablePugSizeVars = useAppStore(state => state.enablePugSizeVars);
-  const enableQuickCopy = useAppStore(state => state.enableQuickCopy);
-  const useSoftTabs = useAppStore(state => state.useSoftTabs);
-  const tabSize = useAppStore(state => state.tabSize);
-  const setJADECode = useAppStore(state => state.setJADECode);
-  const setIsSvgoMenuOpen = useAppStore(state => state.setIsSvgoMenuOpen);
-  const setIsHelpMenuOpen = useAppStore(state => state.setIsHelpMenuOpen);
-  const setEnableQuickCopy = useAppStore(state => state.setEnableQuickCopy);
-  
+  const isScriptsLoading = useAppStore((state) => state.isScriptsLoading);
+  const setIsScriptsLoading = useAppStore((state) => state.setIsScriptsLoading);
+  const addToast = useAppStore((state) => state.addToast);
+  const HTMLCode = useAppStore((state) => state.HTMLCode);
+  const openFiles = useAppStore((state) => state.openFiles);
+  const isSvgoMenuOpen = useAppStore((state) => state.isSvgoMenuOpen);
+  const isHelpMenuOpen = useAppStore((state) => state.isHelpMenuOpen);
+  const isSvgoEnabled = useAppStore((state) => state.isSvgoEnabled);
+  const svgoSettings = useAppStore((state) => state.svgoSettings);
+  const enableSvgIdToClass = useAppStore((state) => state.enableSvgIdToClass);
+  const enableCommonClasses = useAppStore((state) => state.enableCommonClasses);
+  const enablePugSizeVars = useAppStore((state) => state.enablePugSizeVars);
+  const enableQuickCopy = useAppStore((state) => state.enableQuickCopy);
+  const useSoftTabs = useAppStore((state) => state.useSoftTabs);
+  const tabSize = useAppStore((state) => state.tabSize);
+  const setJADECode = useAppStore((state) => state.setJADECode);
+  const setIsSvgoMenuOpen = useAppStore((state) => state.setIsSvgoMenuOpen);
+  const setIsHelpMenuOpen = useAppStore((state) => state.setIsHelpMenuOpen);
+  const setEnableQuickCopy = useAppStore((state) => state.setEnableQuickCopy);
+
   const { convertHtmlToPug } = useConversion();
 
   // Wait for external scripts to load (pug.js, html-to-jade.js, he.js)
   useEffect(() => {
     const checkScripts = () => {
       if (window.Html2Jade && window.pug && window.he) {
-        setScriptsLoaded(true);
+        setIsScriptsLoading(false);
         return true;
       }
       return false;
@@ -54,16 +58,20 @@ const App: React.FC = () => {
 
     const timeout = setTimeout(() => {
       clearInterval(interval);
-      // Load anyway after timeout to show error state
-      setScriptsLoaded(true);
-      // Silent failure
+      setIsScriptsLoading(false);
+      addToast({
+        type: 'error',
+        title: 'Failed to load editor scripts',
+        description: 'Some features may not work correctly. Try refreshing the page.',
+        duration: 10000,
+      });
     }, 5000);
 
     return () => {
       clearInterval(interval);
       clearTimeout(timeout);
     };
-  }, []);
+  }, [setIsScriptsLoading, addToast]);
 
   // Handle conversion for global HTML code (when no tabs are open)
   useEffect(() => {
@@ -76,16 +84,28 @@ const App: React.FC = () => {
         enablePugSizeVars,
         useSoftTabs,
         tabSize,
-        fileName: null
-      }).then(result => {
+        fileName: null,
+      }).then((result) => {
         setJADECode(result);
       });
     }
-  }, [HTMLCode, openFiles.length, isSvgoEnabled, svgoSettings, enableSvgIdToClass, enableCommonClasses, enablePugSizeVars, useSoftTabs, tabSize, convertHtmlToPug, setJADECode]);
-  
+  }, [
+    HTMLCode,
+    openFiles.length,
+    isSvgoEnabled,
+    svgoSettings,
+    enableSvgIdToClass,
+    enableCommonClasses,
+    enablePugSizeVars,
+    useSoftTabs,
+    tabSize,
+    convertHtmlToPug,
+    setJADECode,
+  ]);
+
   // Set up paste handler for SVG/HTML files
   usePasteHandler({ enabled: true });
-  
+
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onNewTab: () => {
@@ -93,7 +113,7 @@ const App: React.FC = () => {
         id: Date.now().toString(),
         name: 'Untitled',
         htmlContent: '',
-        pugContent: ''
+        pugContent: '',
       };
       useAppStore.getState().addFile(newFile);
     },
@@ -120,7 +140,7 @@ const App: React.FC = () => {
             reader.onload = async (event) => {
               const content = event.target?.result as string;
               if (!content) return;
-              
+
               const pugContent = await convertHtmlToPug(content, {
                 isSvgoEnabled: store.isSvgoEnabled,
                 svgoSettings: store.svgoSettings,
@@ -129,25 +149,29 @@ const App: React.FC = () => {
                 enablePugSizeVars: store.enablePugSizeVars,
                 useSoftTabs: store.useSoftTabs,
                 tabSize: store.tabSize,
-                fileName: file.name
+                fileName: file.name,
               });
-              
+
               newFiles.push({
                 id: `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
                 name: file.name,
                 htmlContent: content,
-                pugContent
+                pugContent,
               });
-              
+
               processedCount++;
-              
+
               // Add all files at once when all are processed
               if (processedCount === fileArray.length) {
                 useAppStore.getState().addFiles(newFiles);
               }
             };
             reader.onerror = () => {
-              // Silent failure
+              addToast({
+                type: 'error',
+                title: `Failed to read file: ${file.name}`,
+                description: 'The file could not be read. Please try again.',
+              });
               processedCount++;
             };
             reader.readAsText(file);
@@ -184,31 +208,32 @@ const App: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isSvgoMenuOpen, isHelpMenuOpen, setIsSvgoMenuOpen, setIsHelpMenuOpen]);
 
+  if (isScriptsLoading) {
+    return <LoadingOverlay />;
+  }
+
   return (
     <div className="flex flex-col h-screen text-foreground" style={{ backgroundColor: '#1E2431' }}>
       {/* Floating toolbar */}
       <FloatingControls />
-      
+
       {/* Tab bar */}
       <TabBar />
-      
+
       {/* Editor panes */}
       <EditorPane />
-      
+
       {/* Status Bar */}
       <StatusBar />
-      
+
       {/* SVGO Settings Dialog */}
-      <SvgoSettingsDialog 
-        isOpen={isSvgoMenuOpen}
-        onClose={() => setIsSvgoMenuOpen(false)}
-      />
-      
+      <SvgoSettingsDialog isOpen={isSvgoMenuOpen} onClose={() => setIsSvgoMenuOpen(false)} />
+
       {/* Help Dialog */}
-      <HelpDialog 
-        isOpen={isHelpMenuOpen}
-        onClose={() => setIsHelpMenuOpen(false)}
-      />
+      <HelpDialog isOpen={isHelpMenuOpen} onClose={() => setIsHelpMenuOpen(false)} />
+
+      {/* Toast notifications */}
+      <ToastContainer />
     </div>
   );
 };

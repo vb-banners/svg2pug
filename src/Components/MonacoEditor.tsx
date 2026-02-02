@@ -47,7 +47,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // Clean up old color styles
     const oldStyles = document.querySelectorAll('style[data-hex-color]');
-    oldStyles.forEach(style => style.remove());
+    oldStyles.forEach((style) => style.remove());
 
     HEX_COLOR_REGEX.lastIndex = 0;
     while ((match = HEX_COLOR_REGEX.exec(text)) !== null) {
@@ -95,11 +95,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // Sublime-flavored keymap for frequently used shortcuts
     const { KeyMod, KeyCode } = monacoInstance;
-    const bind = (
-      keybinding: number,
-      commandId: string,
-      args?: any,
-    ) => {
+    const bind = (keybinding: number, commandId: string, args?: any) => {
       editor.addCommand(keybinding, () => {
         editor.trigger('', commandId, args ?? null);
       });
@@ -108,7 +104,10 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
     // Multi-cursor / selection
     bind(KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.UpArrow, 'editor.action.insertCursorAbove');
     bind(KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.DownArrow, 'editor.action.insertCursorBelow');
-    bind(KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyL, 'editor.action.insertCursorAtEndOfEachLineSelected'); // split selection into lines
+    bind(
+      KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyL,
+      'editor.action.insertCursorAtEndOfEachLineSelected'
+    ); // split selection into lines
     bind(KeyMod.CtrlCmd | KeyCode.KeyD, 'editor.action.addSelectionToNextFindMatch');
     bind(KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyG, 'editor.action.selectHighlights'); // select all occurrences
 
@@ -144,8 +143,14 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
     bind(KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.Slash, 'editor.action.blockComment');
 
     // Case transforms (chords)
-    bind(KeyMod.chord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyU), 'editor.action.transformToUppercase');
-    bind(KeyMod.chord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyL), 'editor.action.transformToLowercase');
+    bind(
+      KeyMod.chord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyU),
+      'editor.action.transformToUppercase'
+    );
+    bind(
+      KeyMod.chord(KeyMod.CtrlCmd | KeyCode.KeyK, KeyMod.CtrlCmd | KeyCode.KeyL),
+      'editor.action.transformToLowercase'
+    );
 
     // Prevent browser tab shortcuts from hijacking when editor is focused
     editor.onKeyDown((e) => {
@@ -329,11 +334,7 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
         if (model) {
           // Use pushEditOperations to preserve undo/redo history
           const fullRange = model.getFullModelRange();
-          model.pushEditOperations(
-            [],
-            [{ range: fullRange, text: newValue }],
-            () => null
-          );
+          model.pushEditOperations([], [{ range: fullRange, text: newValue }], () => null);
         }
       }
     }
@@ -343,10 +344,10 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
   const handleBeforeMount = (monacoInstance: Monaco) => {
     // Define the theme before the editor mounts
     monacoInstance.editor.defineTheme('ayu-mirage', ayuMirageTheme);
-    
+
     // Register a lightweight Pug language so Monaco can colorize indentation-based syntax
     const languages = monacoInstance.languages.getLanguages();
-    const hasPug = languages.some(lang => lang.id === 'pug');
+    const hasPug = languages.some((lang) => lang.id === 'pug');
 
     // Always register/override to ensure our tokenizer is used
     if (!hasPug) {
@@ -359,107 +360,123 @@ export const MonacoEditor: React.FC<MonacoEditorProps> = ({
 
     // Always set language configuration and tokenizer (even if language exists)
     monacoInstance.languages.setLanguageConfiguration('pug', {
-        comments: {
-          lineComment: '//',
-          blockComment: ['//- ', ''],
-        },
-        brackets: [
-          ['(', ')'],
-          ['[', ']'],
-        ],
-        autoClosingPairs: [
-          { open: '"', close: '"' },
-          { open: "'", close: "'" },
-          { open: '(', close: ')' },
-          { open: '[', close: ']' },
-        ],
-        surroundingPairs: [
-          { open: '"', close: '"' },
-          { open: "'", close: "'" },
-          { open: '(', close: ')' },
-          { open: '[', close: ']' },
-        ],
-      });
+      comments: {
+        lineComment: '//',
+        blockComment: ['//- ', ''],
+      },
+      brackets: [
+        ['(', ')'],
+        ['[', ']'],
+      ],
+      autoClosingPairs: [
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+        { open: '(', close: ')' },
+        { open: '[', close: ']' },
+      ],
+      surroundingPairs: [
+        { open: '"', close: '"' },
+        { open: "'", close: "'" },
+        { open: '(', close: ')' },
+        { open: '[', close: ']' },
+      ],
+    });
 
-      monacoInstance.languages.setMonarchTokensProvider('pug', {
-        defaultToken: '',
-        tokenPostfix: '.pug',
-        
-        brackets: [
-          { open: '(', close: ')', token: 'delimiter.parenthesis' },
-          { open: '[', close: ']', token: 'delimiter.square' },
-        ],
-        
-        keywords: [
-          'if', 'else', 'unless', 'case', 'when', 'default',
-          'each', 'while', 'mixin', 'block', 'extends', 'include',
-          'append', 'prepend', 'for', 'in'
-        ],
-        
-        tokenizer: {
-          root: [
-            // Comments
-            [/\/\/.*$/, 'comment'],
-            [/\/\/-.*$/, 'comment'],
-            
-            // Doctype
-            [/^\s*doctype\s+.*$/, 'keyword'],
-            
-            // Control flow keywords
-            [/^\s*(?:if|else|unless|case|when|default|each|while|for|mixin|block|extends|include|append|prepend)\b/, 'keyword'],
-            
-            // Tags at start of line
-            [/^\s*[a-zA-Z][\w-]*/, 'entity.name.tag.pug'],
-            
-            // ID selectors
-            [/#[\w-]+/, 'entity.other.attribute-name.id.pug'],
-            
-            // Class selectors  
-            [/\.[\w-]+/, 'entity.other.attribute-name.class.pug'],
-            
-            // Attributes in parentheses
-            [/\(/, { token: 'punctuation.definition.tag.pug', next: '@attributes' }],
-            
-            // Quoted strings
-            [/"(?:[^"\\]|\\.)*"/, 'string.quoted.double'],
-            [/'(?:[^'\\]|\\.)*'/, 'string.quoted.single'],
-            
-            // Numbers
-            [/\b\d+(?:\.\d+)?\b/, 'number'],
-            
-            // Hex colors
-            [/#[0-9a-fA-F]{3,8}\b/, 'string'],
-            
-            // Any other content
-            [/./, ''],
+    monacoInstance.languages.setMonarchTokensProvider('pug', {
+      defaultToken: '',
+      tokenPostfix: '.pug',
+
+      brackets: [
+        { open: '(', close: ')', token: 'delimiter.parenthesis' },
+        { open: '[', close: ']', token: 'delimiter.square' },
+      ],
+
+      keywords: [
+        'if',
+        'else',
+        'unless',
+        'case',
+        'when',
+        'default',
+        'each',
+        'while',
+        'mixin',
+        'block',
+        'extends',
+        'include',
+        'append',
+        'prepend',
+        'for',
+        'in',
+      ],
+
+      tokenizer: {
+        root: [
+          // Comments
+          [/\/\/.*$/, 'comment'],
+          [/\/\/-.*$/, 'comment'],
+
+          // Doctype
+          [/^\s*doctype\s+.*$/, 'keyword'],
+
+          // Control flow keywords
+          [
+            /^\s*(?:if|else|unless|case|when|default|each|while|for|mixin|block|extends|include|append|prepend)\b/,
+            'keyword',
           ],
-          
-          attributes: [
-            // Close parenthesis
-            [/\)/, { token: 'punctuation.definition.tag.pug', next: '@pop' }],
-            
-            // Attribute name followed by equals
-            [/[\w-]+\s*=\s*/, 'entity.other.attribute-name.pug'],
-            
-            // Quoted attribute values
-            [/"(?:[^"\\]|\\.)*"/, 'string.quoted.double'],
-            [/'(?:[^'\\]|\\.)*'/, 'string.quoted.single'],
-            
-            // Standalone attribute names (boolean attributes)
-            [/[\w-]+(?=\s*[,\)])/, 'entity.other.attribute-name.pug'],
-            
-            // Hex colors in attributes
-            [/#[0-9a-fA-F]{3,8}\b/, 'string'],
-            
-            // Unquoted values (numbers, identifiers, etc.)
-            [/[^\s,\)'"=]+/, 'string'],
-            
-            // Separators
-            [/,/, 'punctuation'],
-            [/\s+/, ''],
-          ],
-        },
-      });
+
+          // Tags at start of line
+          [/^\s*[a-zA-Z][\w-]*/, 'entity.name.tag.pug'],
+
+          // ID selectors
+          [/#[\w-]+/, 'entity.other.attribute-name.id.pug'],
+
+          // Class selectors
+          [/\.[\w-]+/, 'entity.other.attribute-name.class.pug'],
+
+          // Attributes in parentheses
+          [/\(/, { token: 'punctuation.definition.tag.pug', next: '@attributes' }],
+
+          // Quoted strings
+          [/"(?:[^"\\]|\\.)*"/, 'string.quoted.double'],
+          [/'(?:[^'\\]|\\.)*'/, 'string.quoted.single'],
+
+          // Numbers
+          [/\b\d+(?:\.\d+)?\b/, 'number'],
+
+          // Hex colors
+          [/#[0-9a-fA-F]{3,8}\b/, 'string'],
+
+          // Any other content
+          [/./, ''],
+        ],
+
+        attributes: [
+          // Close parenthesis
+          [/\)/, { token: 'punctuation.definition.tag.pug', next: '@pop' }],
+
+          // Attribute name followed by equals
+          [/[\w-]+\s*=\s*/, 'entity.other.attribute-name.pug'],
+
+          // Quoted attribute values
+          [/"(?:[^"\\]|\\.)*"/, 'string.quoted.double'],
+          [/'(?:[^'\\]|\\.)*'/, 'string.quoted.single'],
+
+          // Standalone attribute names (boolean attributes)
+          [/[\w-]+(?=\s*[,\)])/, 'entity.other.attribute-name.pug'],
+
+          // Hex colors in attributes
+          [/#[0-9a-fA-F]{3,8}\b/, 'string'],
+
+          // Unquoted values (numbers, identifiers, etc.)
+          [/[^\s,\)'"=]+/, 'string'],
+
+          // Separators
+          [/,/, 'punctuation'],
+          [/\s+/, ''],
+        ],
+      },
+    });
   };
 
   const defaultOptions: monaco.editor.IStandaloneEditorConstructionOptions = {

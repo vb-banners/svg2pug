@@ -51,16 +51,11 @@ const SortableTab: React.FC<SortableTabProps> = ({
   onDuplicate,
   onCloseOthers,
   onCloseAll,
-  onNewTab
+  onNewTab,
 }) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -76,7 +71,7 @@ const SortableTab: React.FC<SortableTabProps> = ({
             data-tab-id={id}
             style={{
               ...style,
-              backgroundColor: isActive ? '#232937' : 'transparent'
+              backgroundColor: isActive ? '#232937' : 'transparent',
             }}
             className={cn(
               'flex items-center gap-2 pl-6 pr-3 py-2 border-t border-t-transparent select-none h-10',
@@ -147,15 +142,15 @@ const SortableTab: React.FC<SortableTabProps> = ({
 export const TabBar: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tabBarRef = useRef<HTMLDivElement>(null);
-  const openFiles = useAppStore(state => state.openFiles);
-  const activeFileId = useAppStore(state => state.activeFileId);
-  const reorderFiles = useAppStore(state => state.reorderFiles);
-  const addFile = useAppStore(state => state.addFile);
-  const addFiles = useAppStore(state => state.addFiles);
-  const setTabBarScrollPosition = useAppStore(state => state.setTabBarScrollPosition);
-  const duplicateFile = useAppStore(state => state.duplicateFile);
-  const closeOtherFiles = useAppStore(state => state.closeOtherFiles);
-  const closeAllFiles = useAppStore(state => state.closeAllFiles);
+  const openFiles = useAppStore((state) => state.openFiles);
+  const activeFileId = useAppStore((state) => state.activeFileId);
+  const reorderFiles = useAppStore((state) => state.reorderFiles);
+  const addFile = useAppStore((state) => state.addFile);
+  const addFiles = useAppStore((state) => state.addFiles);
+  const setTabBarScrollPosition = useAppStore((state) => state.setTabBarScrollPosition);
+  const duplicateFile = useAppStore((state) => state.duplicateFile);
+  const closeOtherFiles = useAppStore((state) => state.closeOtherFiles);
+  const closeAllFiles = useAppStore((state) => state.closeAllFiles);
 
   const { handleTabSwitch, handleTabClose } = useFileTabs();
   const { convertHtmlToPug } = useConversion();
@@ -188,7 +183,7 @@ export const TabBar: React.FC = () => {
       id: Date.now().toString(),
       name: 'Untitled',
       htmlContent: '',
-      pugContent: ''
+      pugContent: '',
     };
     addFile(newFile);
   };
@@ -203,6 +198,7 @@ export const TabBar: React.FC = () => {
       const state = useAppStore.getState();
       const fileArray = Array.from(files);
       let processedCount = 0;
+      const failedFiles: string[] = [];
       const newFiles: Array<{
         id: string;
         name: string;
@@ -224,26 +220,57 @@ export const TabBar: React.FC = () => {
             enablePugSizeVars: state.enablePugSizeVars,
             useSoftTabs: state.useSoftTabs,
             tabSize: state.tabSize,
-            fileName: file.name
+            fileName: file.name,
           });
 
           const fileData = {
             id: `file-${Date.now()}-${index}-${Math.random().toString(36).substr(2, 9)}`,
             name: file.name,
             htmlContent: content,
-            pugContent
+            pugContent,
           };
 
           newFiles.push(fileData);
           processedCount++;
 
           if (processedCount === fileArray.length) {
-            addFiles(newFiles);
+            if (newFiles.length > 0) {
+              addFiles(newFiles);
+            }
+            if (failedFiles.length > 0) {
+              state.addToast({
+                type: 'error',
+                title:
+                  failedFiles.length === 1
+                    ? `Failed to read file: ${failedFiles[0]}`
+                    : `Failed to read ${failedFiles.length} files`,
+                description:
+                  failedFiles.length > 1
+                    ? failedFiles.slice(0, 3).join(', ') + (failedFiles.length > 3 ? '...' : '')
+                    : undefined,
+              });
+            }
           }
         };
         reader.onerror = () => {
-          // Silent failure
+          failedFiles.push(file.name);
           processedCount++;
+          if (processedCount === fileArray.length && newFiles.length > 0) {
+            addFiles(newFiles);
+          }
+          if (processedCount === fileArray.length && failedFiles.length > 0) {
+            state.addToast({
+              type: 'error',
+              title:
+                failedFiles.length === 1
+                  ? `Failed to read file: ${failedFiles[0]}`
+                  : `Failed to read ${failedFiles.length} files`,
+              description:
+                failedFiles.length > 1
+                  ? failedFiles.slice(0, 3).join(', ') + (failedFiles.length > 3 ? '...' : '')
+                  : undefined,
+            });
+          }
         };
         reader.readAsText(file);
       });
@@ -289,7 +316,10 @@ export const TabBar: React.FC = () => {
         aria-label="Upload HTML files"
       />
 
-      <div className="flex items-center h-10 relative" style={{ backgroundColor: '#1E2431', borderBottom: '1px solid #2F3A4B' }}>
+      <div
+        className="flex items-center h-10 relative"
+        style={{ backgroundColor: '#1E2431', borderBottom: '1px solid #2F3A4B' }}
+      >
         <Button
           variant="ghost"
           size="sm"

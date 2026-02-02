@@ -124,4 +124,3 @@ export const ayuMirageTheme: monaco.editor.IStandaloneThemeData = {
     'scrollbarSlider.activeBackground': '#33415ecc',
   },
 };
-

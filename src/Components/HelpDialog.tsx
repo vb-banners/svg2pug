@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 
 interface HelpDialogProps {
   isOpen: boolean;
@@ -20,7 +14,7 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
           <DialogTitle className="text-2xl font-bold">SVG to PUG</DialogTitle>
           <DialogDescription>Keyboard shortcuts and information</DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 mt-4">
           <section>
             <h3 className="text-lg font-semibold mb-3">Keyboard Shortcuts</h3>
@@ -59,9 +53,15 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
               </div>
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-2">
-                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">⌘</kbd>
-                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">⇧</kbd>
-                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">K</kbd>
+                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">
+                    ⌘
+                  </kbd>
+                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">
+                    ⇧
+                  </kbd>
+                  <kbd className="px-2 py-1 text-xs font-semibold bg-[#1A1A1A] border border-[#FFD173]/20 rounded">
+                    K
+                  </kbd>
                 </div>
                 <span className="text-sm text-gray-300">Delete line(s) (Monaco)</span>
               </div>
@@ -85,9 +85,10 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
           <section>
             <h3 className="text-lg font-semibold mb-3">About</h3>
             <p className="text-sm mb-4" style={{ color: '#C5C5C5' }}>
-              SVG to PUG helps you convert SVG snippets to PUG format with optional SVGO optimization for SVG elements.
+              SVG to PUG helps you convert SVG snippets to PUG format with optional SVGO
+              optimization for SVG elements.
             </p>
-            
+
             <h4 className="text-sm font-semibold mb-2">Features</h4>
             <ul className="list-disc list-inside space-y-1 text-sm" style={{ color: '#C5C5C5' }}>
               <li>Real-time SVG to Pug conversion</li>
@@ -102,9 +103,9 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
 
           <section>
             <h3 className="text-lg font-semibold mb-3">Repository</h3>
-            <a 
-              href="https://github.com/vb-banners/html2pug" 
-              target="_blank" 
+            <a
+              href="https://github.com/vb-banners/html2pug"
+              target="_blank"
               rel="noopener noreferrer"
               className="text-sm text-primary hover:underline"
             >
@@ -115,17 +116,17 @@ export const HelpDialog: React.FC<HelpDialogProps> = ({ isOpen, onClose }) => {
           <section>
             <h3 className="text-lg font-semibold mb-3">Based on</h3>
             <div className="space-y-1">
-              <a 
-                href="https://github.com/dvamvo/html2pug" 
-                target="_blank" 
+              <a
+                href="https://github.com/dvamvo/html2pug"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm text-primary hover:underline"
               >
                 github.com/dvamvo/html2pug
               </a>
-              <a 
-                href="https://github.com/jakearchibald/svgomg" 
-                target="_blank" 
+              <a
+                href="https://github.com/jakearchibald/svgomg"
+                target="_blank"
                 rel="noopener noreferrer"
                 className="block text-sm text-primary hover:underline"
               >

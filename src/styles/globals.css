@@ -11,32 +11,32 @@
     /* Ayu Mirage Dark Theme Colors */
     --background: 220 24% 13%; /* #1E2431 */
     --foreground: 47 10% 84%; /* #D9D7CE */
-    
+
     --card: 220 24% 13%; /* #1E2431 */
     --card-foreground: 47 10% 84%; /* #D9D7CE */
-    
+
     --popover: 220 24% 13%; /* #1E2431 */
     --popover-foreground: 47 10% 84%; /* #D9D7CE */
-    
+
     --primary: 45 100% 65%; /* #FFC94F */
     --primary-foreground: 220 24% 13%; /* #1E2431 */
-    
+
     --secondary: 220 24% 13%; /* #1E2431 */
     --secondary-foreground: 47 10% 84%; /* #D9D7CE */
-    
+
     --muted: 220 24% 13%; /* #1E2431 */
     --muted-foreground: 220 23% 60%; /* #8F9BB8 */
-    
+
     --accent: 197 100% 72%; /* #73D0FF */
     --accent-foreground: 220 24% 13%; /* #1E2431 */
-    
+
     --destructive: 9 100% 64%; /* #FF3333 */
     --destructive-foreground: 47 10% 84%; /* #D9D7CE */
-    
+
     --border: 217 25% 24%; /* #2F3A4B */
     --input: 217 25% 24%; /* #2F3A4B */
     --ring: 45 100% 65%; /* #FFC94F */
-    
+
     --radius: 0.5rem;
   }
 }
@@ -47,7 +47,9 @@
   }
   body {
     @apply bg-background text-foreground font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
   }
 }
 
@@ -63,11 +65,11 @@
 /* Hide scrollbar utility */
 @layer utilities {
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari and Opera */
+    display: none; /* Chrome, Safari and Opera */
   }
 }
 
@@ -80,7 +82,7 @@
 }
 
 .monaco-editor {
-  border: 1px solid #2F3A4B !important;
+  border: 1px solid #2f3a4b !important;
   border-top: none !important;
   border-radius: 0 !important;
 }
@@ -94,8 +96,8 @@
 }
 
 .monaco-editor .margin {
-  background-color: #1E2431 !important;
-  border-right: 1px solid #2F3A4B !important;
+  background-color: #1e2431 !important;
+  border-right: 1px solid #2f3a4b !important;
 }
 
 .monaco-editor .line-numbers {
@@ -107,8 +109,8 @@
 }
 
 .monaco-editor .cursor {
-  background-color: #FFC94F !important;
-  color: #1F242E !important;
+  background-color: #ffc94f !important;
+  color: #1f242e !important;
 }
 
 .monaco-editor .selected-text {

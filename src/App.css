@@ -4,7 +4,15 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', 'Geist', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    'Inter',
+    'Geist',
+    'Inter',
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
@@ -16,7 +24,7 @@ header,
 article {
   color: white;
   background: #1f2430;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   margin: 0 !important;
   flex: 0 0 auto;
   border-bottom: 1px solid #2a303f;
@@ -46,7 +54,7 @@ article {
   margin-right: 0 !important;
 }
 
-[class*="col-"] {
+[class*='col-'] {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
@@ -98,7 +106,7 @@ header .right {
 header .logo {
   font-weight: 700;
   font-size: 28px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 header .small {
@@ -116,7 +124,7 @@ header .setting input {
   margin: 0 4px 0 12px;
 }
 
-header .setting select[name="tabSize"] {
+header .setting select[name='tabSize'] {
   margin-left: 15px;
   margin-right: 7px;
 }
@@ -146,8 +154,8 @@ header .setting select[name="tabSize"] {
 .ace_editor {
   flex: 1 1 auto;
   height: 100% !important;
-  font-family: 'Fira Code', "Source Code Pro", "Monaco", "Menlo", "Ubuntu Mono", "Consolas",
-    monospace !important;
+  font-family:
+    'Fira Code', 'Source Code Pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace !important;
   font-weight: 500 !important;
   width: 100% !important;
   font-variant-ligatures: normal;
@@ -219,7 +227,7 @@ footer {
   user-select: none;
   width: 100%;
   z-index: 5;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   align-items: center;
   flex-shrink: 0;
 }
@@ -298,11 +306,14 @@ footer {
   border-radius: 8px;
   border: 1px solid #343d4c;
   background: #1f2430;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   min-height: var(--toolbar-control-height);
 }
 
@@ -355,9 +366,9 @@ footer {
   margin-top: 8px;
 }
 
-.floating-controls .setting.controls > label > input[type="radio"],
-.floating-controls .setting.controls > label > input[type="checkbox"],
-.floating-controls .svgo-toggle-control > input[type="checkbox"] {
+.floating-controls .setting.controls > label > input[type='radio'],
+.floating-controls .setting.controls > label > input[type='checkbox'],
+.floating-controls .svgo-toggle-control > input[type='checkbox'] {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -372,10 +383,10 @@ footer {
   flex-shrink: 0;
 }
 
-.floating-controls .setting.controls > label > input[type="radio"]::after,
-.floating-controls .setting.controls > label > input[type="checkbox"]::after,
-.floating-controls .svgo-toggle-control > input[type="checkbox"]::after {
-  content: "";
+.floating-controls .setting.controls > label > input[type='radio']::after,
+.floating-controls .setting.controls > label > input[type='checkbox']::after,
+.floating-controls .svgo-toggle-control > input[type='checkbox']::after {
+  content: '';
   position: absolute;
   top: 50%;
   left: 50%;
@@ -386,37 +397,37 @@ footer {
   transform: translate(-50%, -50%);
 }
 
-.floating-controls .setting.controls > label > input[type="radio"]:checked,
-.floating-controls .setting.controls > label > input[type="checkbox"]:checked,
-.floating-controls .svgo-toggle-control > input[type="checkbox"]:checked {
+.floating-controls .setting.controls > label > input[type='radio']:checked,
+.floating-controls .setting.controls > label > input[type='checkbox']:checked,
+.floating-controls .svgo-toggle-control > input[type='checkbox']:checked {
   border-color: var(--accent-color);
 }
 
-.floating-controls .setting.controls > label > input[type="radio"]:checked::after,
-.floating-controls .setting.controls > label > input[type="checkbox"]:checked::after,
-.floating-controls .svgo-toggle-control > input[type="checkbox"]:checked::after {
+.floating-controls .setting.controls > label > input[type='radio']:checked::after,
+.floating-controls .setting.controls > label > input[type='checkbox']:checked::after,
+.floating-controls .svgo-toggle-control > input[type='checkbox']:checked::after {
   background: var(--accent-color);
 }
 
-.floating-controls .setting.controls > label > input[type="radio"]:focus-visible,
-.floating-controls .setting.controls > label > input[type="checkbox"]:focus-visible,
-.floating-controls .svgo-toggle-control > input[type="checkbox"]:focus-visible {
+.floating-controls .setting.controls > label > input[type='radio']:focus-visible,
+.floating-controls .setting.controls > label > input[type='checkbox']:focus-visible,
+.floating-controls .svgo-toggle-control > input[type='checkbox']:focus-visible {
   outline: 2px solid rgba(115, 208, 255, 0.6);
   outline-offset: 2px;
 }
 
 .floating-controls .setting.controls > label > span,
 .floating-controls .svgo-toggle-control > span {
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   font-size: 14px;
   white-space: nowrap;
   line-height: 1;
   display: inline-block;
 }
 
-.floating-controls .setting.controls > label > input[type="radio"]:checked + span,
-.floating-controls .setting.controls > label > input[type="checkbox"]:checked + span,
-.floating-controls .svgo-toggle-control > input[type="checkbox"]:checked + span {
+.floating-controls .setting.controls > label > input[type='radio']:checked + span,
+.floating-controls .setting.controls > label > input[type='checkbox']:checked + span,
+.floating-controls .svgo-toggle-control > input[type='checkbox']:checked + span {
   color: var(--accent-color);
 }
 
@@ -449,7 +460,7 @@ footer {
   background-repeat: no-repeat;
   background-position: right 8px center;
   background-size: 12px;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   border: 1px solid #343d4c;
   border-radius: 8px;
   padding: 4px 28px 4px 12px;
@@ -494,11 +505,14 @@ footer {
   border-radius: 8px;
   border: 1px solid #343d4c;
   background: #1f2430;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   font-size: 14px;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   min-height: var(--toolbar-control-height);
 }
 
@@ -538,7 +552,7 @@ footer {
   max-height: 640px;
   display: flex;
   flex-direction: column;
-  background: rgba(31, 36, 48, 0.90);
+  background: rgba(31, 36, 48, 0.9);
   backdrop-filter: blur(2px);
   border: 1px solid #343d4c;
   border-radius: 12px;
@@ -599,7 +613,7 @@ footer {
 .floating-controls .svgo-popup__group-heading {
   font-size: 14px;
   font-weight: 600;
-  color: #6E7A8F;
+  color: #6e7a8f;
   letter-spacing: 0.03em;
 }
 
@@ -609,7 +623,6 @@ footer {
   flex-direction: column;
   gap: 14px;
 }
-
 
 .floating-controls .svgo-popup__features {
   padding-right: 0;
@@ -623,7 +636,7 @@ footer {
   gap: 12px;
   font-size: 15px;
   font-weight: 500;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   cursor: pointer;
   user-select: none;
 }
@@ -660,7 +673,9 @@ footer {
   height: 16px;
   border-radius: 50%;
   background: #1f2430;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease;
 }
 
@@ -688,7 +703,7 @@ footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   font-size: 14px;
 }
 
@@ -722,7 +737,9 @@ footer {
   border-radius: 50%;
   background: var(--accent-color);
   border: 2px solid #1f2430;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
   margin-top: -4px;
 }
 
@@ -738,9 +755,10 @@ footer {
   border-radius: 50%;
   background: var(--accent-color);
   border: 2px solid #1f2430;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
 }
-
 
 .floating-controls .svgo-popup__actions {
   display: flex;
@@ -759,7 +777,9 @@ footer {
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .floating-controls .svgo-popup__reset:hover {
@@ -786,7 +806,8 @@ footer {
 }
 
 .ace-hex-color-chip__text {
-  font-family: 'Fira Code', "Source Code Pro", "Monaco", "Menlo", "Ubuntu Mono", "Consolas", monospace;
+  font-family:
+    'Fira Code', 'Source Code Pro', 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
   font-weight: 500;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -829,13 +850,15 @@ footer {
   padding: 10px 12px 10px 18px;
   background: transparent;
   border-right: 1px solid #2c3750;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   font-size: 13px;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 500;
   cursor: pointer;
   user-select: none;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   white-space: nowrap;
   position: relative;
   min-width: 140px;
@@ -864,7 +887,7 @@ footer {
 }
 
 .tab.active::after {
-  content: "";
+  content: '';
   position: absolute;
   bottom: -1px;
   left: 0;
@@ -896,7 +919,9 @@ footer {
   background: transparent;
   color: #8f9bb8;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   opacity: 0;
 }
 
@@ -933,7 +958,9 @@ footer {
   background: transparent;
   color: #8f9bb8;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
   border-right: 1px solid #2c3750;
   flex-shrink: 0;
   outline: none;
@@ -982,7 +1009,7 @@ footer {
 }
 
 .editor-split-handle::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 0;
   bottom: 0;
@@ -1035,7 +1062,10 @@ footer {
   background: #1f2430;
   color: #cbccc6;
   cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .floating-controls .help-button:hover {
@@ -1062,7 +1092,7 @@ footer {
   max-height: calc(100vh - 160px);
   display: flex;
   flex-direction: column;
-  background: rgba(31, 36, 48, 0.90);
+  background: rgba(31, 36, 48, 0.9);
   backdrop-filter: blur(2px);
   border: 1px solid #343d4c;
   border-radius: 12px;
@@ -1105,7 +1135,7 @@ footer {
 .floating-controls .help-popup__title {
   font-size: 18px;
   font-weight: 600;
-  color: #6E7A8F;
+  color: #6e7a8f;
   margin: 0 0 24px 0;
   letter-spacing: 0.01em;
 }
@@ -1124,7 +1154,7 @@ footer {
 .floating-controls .help-popup__group-heading {
   font-size: 14px;
   font-weight: 600;
-  color: #6E7A8F;
+  color: #6e7a8f;
   letter-spacing: 0.03em;
   margin: 0;
 }
@@ -1140,7 +1170,7 @@ footer {
   align-items: center;
   gap: 12px;
   font-size: 14px;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
 }
 
 .floating-controls .help-shortcut kbd {
@@ -1156,7 +1186,7 @@ footer {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #6E7A8F !important;
+  color: #6e7a8f !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
@@ -1196,8 +1226,8 @@ footer {
   align-items: center;
   background: #1f2430;
   border-top: 1px solid #2c3750;
-  color: #6E7A8F;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: #6e7a8f;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
   line-height: 32px;
   flex-shrink: 0;
@@ -1234,7 +1264,7 @@ footer {
   flex-direction: row;
   align-items: center;
   white-space: nowrap;
-  color: #6E7A8F;
+  color: #6e7a8f;
   transition: color 0.2s ease;
   cursor: default;
   height: 32px;
@@ -1263,7 +1293,7 @@ footer {
 }
 
 .status-bar__message {
-  color: #CAFF6C;
+  color: #caff6c;
   font-weight: 500;
   animation: fadeIn 0.2s ease;
   position: absolute;

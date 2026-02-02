@@ -6,11 +6,11 @@ export const useEditorCursor = (
   htmlEditor: Monaco.editor.IStandaloneCodeEditor | null,
   pugEditor: Monaco.editor.IStandaloneCodeEditor | null
 ) => {
-  const setActiveEditor = useAppStore(state => state.setActiveEditor);
-  const setHtmlCursorPosition = useAppStore(state => state.setHtmlCursorPosition);
-  const setPugCursorPosition = useAppStore(state => state.setPugCursorPosition);
-  const setHtmlSelectionInfo = useAppStore(state => state.setHtmlSelectionInfo);
-  const setPugSelectionInfo = useAppStore(state => state.setPugSelectionInfo);
+  const setActiveEditor = useAppStore((state) => state.setActiveEditor);
+  const setHtmlCursorPosition = useAppStore((state) => state.setHtmlCursorPosition);
+  const setPugCursorPosition = useAppStore((state) => state.setPugCursorPosition);
+  const setHtmlSelectionInfo = useAppStore((state) => state.setHtmlSelectionInfo);
+  const setPugSelectionInfo = useAppStore((state) => state.setPugSelectionInfo);
 
   useEffect(() => {
     if (!htmlEditor) return;
@@ -20,7 +20,7 @@ export const useEditorCursor = (
       if (position) {
         setHtmlCursorPosition({
           line: position.lineNumber,
-          column: position.column
+          column: position.column,
         });
       }
     };
@@ -34,7 +34,7 @@ export const useEditorCursor = (
           const lines = selectedText.split('\n');
           setHtmlSelectionInfo({
             lineCount: lines.length,
-            charCount: selectedText.length
+            charCount: selectedText.length,
           });
         }
       } else {
@@ -70,7 +70,7 @@ export const useEditorCursor = (
       if (position) {
         setPugCursorPosition({
           line: position.lineNumber,
-          column: position.column
+          column: position.column,
         });
       }
     };
@@ -84,7 +84,7 @@ export const useEditorCursor = (
           const lines = selectedText.split('\n');
           setPugSelectionInfo({
             lineCount: lines.length,
-            charCount: selectedText.length
+            charCount: selectedText.length,
           });
         }
       } else {

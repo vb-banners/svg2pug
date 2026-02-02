@@ -14,9 +14,17 @@ interface PreviewPaneProps {
   originalHtml?: string;
 }
 
-export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName, fileId, onContentSizeChange, highlightLines, isCopied, originalHtml }) => {
-  const previewScale = useAppStore(state => state.previewScale);
-  const setPreviewScale = useAppStore(state => state.setPreviewScale);
+export const PreviewPane: React.FC<PreviewPaneProps> = ({
+  htmlContent,
+  fileName,
+  fileId,
+  onContentSizeChange,
+  highlightLines,
+  isCopied,
+  originalHtml,
+}) => {
+  const previewScale = useAppStore((state) => state.previewScale);
+  const setPreviewScale = useAppStore((state) => state.setPreviewScale);
   const effectiveContent = useMemo(() => {
     if (htmlContent && htmlContent.trim().length > 0) return htmlContent;
     if (originalHtml && originalHtml.trim().length > 0) return originalHtml;
@@ -26,28 +34,35 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // Detect SVG content and extract dimensions synchronously during render
   // This prevents the brief resize flash on page load
   // Always use originalHtml for SVG detection since effectiveContent might be Pug code
-  const { isSvgContent: detectedIsSvg, svgWidth, svgHeight } = useMemo(() => {
+  const {
+    isSvgContent: detectedIsSvg,
+    svgWidth,
+    svgHeight,
+  } = useMemo(() => {
     // First try originalHtml (the actual SVG source), then fall back to effectiveContent
     const contentToCheck = originalHtml || effectiveContent;
     if (!contentToCheck) return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
-    
+
     const extractDimensionsFromSvg = (svg: Element) => {
       let w = 0;
       let h = 0;
-      
+
       const widthAttr = svg.getAttribute('width');
       const heightAttr = svg.getAttribute('height');
       const viewBox = svg.getAttribute('viewBox');
 
       // Priority 1: ViewBox (most reliable for intrinsic dimensions)
       if (viewBox) {
-        const parts = viewBox.split(/[\s,]+/).filter(Boolean).map(parseFloat);
+        const parts = viewBox
+          .split(/[\s,]+/)
+          .filter(Boolean)
+          .map(parseFloat);
         if (parts.length === 4 && !isNaN(parts[2]) && !isNaN(parts[3])) {
           w = parts[2];
           h = parts[3];
         }
       }
-      
+
       // Priority 2: Width/Height attributes (only if not percentage-based)
       if (!w && widthAttr && !widthAttr.endsWith('%')) {
         w = parseFloat(widthAttr);
@@ -55,20 +70,20 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
       if (!h && heightAttr && !heightAttr.endsWith('%')) {
         h = parseFloat(heightAttr);
       }
-      
+
       return { width: w, height: h };
     };
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(contentToCheck, 'text/html');
     let svg = doc.querySelector('svg');
-    
+
     // Also try parsing effectiveContent if originalHtml didn't have SVG
     if (!svg && effectiveContent && effectiveContent !== contentToCheck) {
       const effectiveDoc = parser.parseFromString(effectiveContent, 'text/html');
       svg = effectiveDoc.querySelector('svg');
     }
-    
+
     if (svg) {
       const dims = extractDimensionsFromSvg(svg);
       if (dims.width > 0 && dims.height > 0) {
@@ -78,7 +93,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
       // This handles cases like width="100%" height="100%" without viewBox
       return { isSvgContent: true, svgWidth: 0, svgHeight: 0 };
     }
-    
+
     return { isSvgContent: false, svgWidth: 0, svgHeight: 0 };
   }, [effectiveContent, originalHtml]);
 
@@ -87,7 +102,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   const gestureStartScaleRef = useRef<number>(1);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [isFitMode, setIsFitMode] = useState(true);
-  
+
   // Use detectedIsSvg directly instead of state to avoid race conditions
   // isSvgContent is true only if we detected SVG AND extracted valid dimensions
   const isSvgContent = detectedIsSvg && svgWidth > 0 && svgHeight > 0;
@@ -95,11 +110,14 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // Send highlight message to iframe
   useEffect(() => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
-      iframeRef.current.contentWindow.postMessage({
-        type: 'highlight-lines',
-        lines: highlightLines,
-        isCopied: isCopied
-      }, '*');
+      iframeRef.current.contentWindow.postMessage(
+        {
+          type: 'highlight-lines',
+          lines: highlightLines,
+          isCopied: isCopied,
+        },
+        '*'
+      );
     }
   }, [highlightLines, isCopied]);
 
@@ -112,15 +130,22 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // Calculate scale synchronously for Fit Mode to avoid render lag
   // Only apply fit mode for SVG content - HTML should always be 100%
   let effectiveScale = previewScale;
-  if (isSvgContent && isFitMode && svgWidth > 0 && svgHeight > 0 && containerSize.width > 0 && containerSize.height > 0) {
+  if (
+    isSvgContent &&
+    isFitMode &&
+    svgWidth > 0 &&
+    svgHeight > 0 &&
+    containerSize.width > 0 &&
+    containerSize.height > 0
+  ) {
     const padding = 32;
     const availableWidth = Math.max(0, containerSize.width - padding);
     const availableHeight = Math.max(0, containerSize.height - padding);
-    
+
     const scaleX = availableWidth / svgWidth;
     const scaleY = availableHeight / svgHeight;
     const fitScale = Math.min(scaleX, scaleY, 1);
-    
+
     effectiveScale = Math.max(0.1, Math.floor(fitScale * 100) / 100);
   } else if (!isSvgContent) {
     // For non-SVG content, always use 100% scale
@@ -157,8 +182,38 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     `,
     backgroundSize: '20px 20px',
     backgroundPosition: '0 0, 0 10px, 10px -10px, -10px 0px',
-    backgroundColor: '#1E2431'
+    backgroundColor: '#1E2431',
   };
+
+  // Strip document wrapper from content that includes full HTML structure
+  // This prevents invalid nested HTML when content has <!DOCTYPE>, <html>, <head>, <body> tags
+  // Also removes script tags to prevent JavaScript errors in preview
+  const strippedContent = useMemo(() => {
+    if (!effectiveContent) return '';
+
+    let content = effectiveContent.trim();
+
+    // Check if this is a full HTML document
+    if (content.match(/^<!DOCTYPE\s+html/i) || content.match(/^<html[\s>]/i)) {
+      // Try to extract body content
+      const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch) {
+        content = bodyMatch[1].trim();
+      } else {
+        // If no body tag but has html/head, try to extract content after </head>
+        const afterHeadMatch = content.match(/<\/head>\s*([\s\S]*?)(?:<\/html>|$)/i);
+        if (afterHeadMatch) {
+          content = afterHeadMatch[1].trim();
+        }
+      }
+    }
+
+    // Remove script tags to prevent JavaScript errors in preview
+    // Scripts in user content can cause syntax errors when executed in iframe context
+    content = content.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+    return content;
+  }, [effectiveContent]);
 
   const srcDoc = useMemo(() => {
     // Cache buster to ensure iframe updates
@@ -178,7 +233,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
             body {
               margin: 0;
               padding: 0;
-              font-family: "Plus Jakarta Sans", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+              font-family: "Inter", "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
               color: #D9D7CE;
               background-color: transparent; /* Allow checkerboard to show through */
               min-height: 100vh;
@@ -462,11 +517,11 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                   lines.forEach(function(line) {
                     // Try to find exact match or closest parent
                     // Since Pug lines map to elements, we look for data-pug-line
-                    var el = document.querySelector(\`[data-pug-line="\${line}"]\`);
+                    var el = document.querySelector('[data-pug-line="' + line + '"]');
                     if (el) {
                       el.classList.add('pug-highlight');
                       el.style.transition = 'all 0.2s ease';
-                      el.style.outline = \`2px solid \${outlineColor}\`;
+                      el.style.outline = '2px solid ' + outlineColor;
                       el.style.outlineOffset = '1px';
                       el.style.backgroundColor = bgColor;
                     }
@@ -477,18 +532,18 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           </script>
         </head>
         <body>
-          ${effectiveContent}
+          ${strippedContent}
         </body>
       </html>
     `;
-  }, [effectiveContent]);
+  }, [strippedContent]);
 
   // Measure container size
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const observer = new ResizeObserver(entries => {
+    const observer = new ResizeObserver((entries) => {
       // Wrap in requestAnimationFrame to avoid ResizeObserver loop errors
       window.requestAnimationFrame(() => {
         if (!Array.isArray(entries) || !entries.length) return;
@@ -507,14 +562,17 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     previewScaleRef.current = previewScale;
   }, [previewScale]);
 
-  const handleZoom = useCallback((deltaY: number) => {
-    setIsFitMode(false);
-    const currentScale = previewScaleRef.current;
-    const zoomFactor = Math.exp(-deltaY * ZOOM_SENSITIVITY);
-    const newScale = currentScale * zoomFactor;
-    const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
-    setPreviewScale(clampedScale);
-  }, [setPreviewScale]);
+  const handleZoom = useCallback(
+    (deltaY: number) => {
+      setIsFitMode(false);
+      const currentScale = previewScaleRef.current;
+      const zoomFactor = Math.exp(-deltaY * ZOOM_SENSITIVITY);
+      const newScale = currentScale * zoomFactor;
+      const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      setPreviewScale(clampedScale);
+    },
+    [setPreviewScale]
+  );
 
   // Handle messages from iframe
   useEffect(() => {
@@ -526,7 +584,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
           containerRef.current.scrollBy({
             left: event.data.deltaX,
             top: event.data.deltaY,
-            behavior: 'auto' // Instant scroll for responsiveness
+            behavior: 'auto', // Instant scroll for responsiveness
           });
         }
       } else if (event.data?.type === 'preview-size') {
@@ -612,7 +670,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     setIsFitMode(false);
     const current = effectiveScale;
     // Find next level that is significantly larger than current (to avoid floating point issues)
-    const next = ZOOM_LEVELS.find(l => l > current + 0.01) || ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
+    const next = ZOOM_LEVELS.find((l) => l > current + 0.01) || ZOOM_LEVELS[ZOOM_LEVELS.length - 1];
     setPreviewScale(next);
   };
 
@@ -620,7 +678,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     setIsFitMode(false);
     const current = effectiveScale;
     // Find prev level
-    const prev = [...ZOOM_LEVELS].reverse().find(l => l < current - 0.01) || ZOOM_LEVELS[0];
+    const prev = [...ZOOM_LEVELS].reverse().find((l) => l < current - 0.01) || ZOOM_LEVELS[0];
     setPreviewScale(prev);
   };
 
@@ -631,10 +689,10 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
   // For HTML: use 100% of container via CSS (no JS measurements needed)
   // isSvgContent already checks for valid dimensions (svgWidth > 0 && svgHeight > 0)
   const isSvgWithDimensions = isSvgContent;
-  
+
   let baseWidth: number;
   let baseHeight: number;
-  
+
   if (isSvgWithDimensions) {
     // SVG content - use intrinsic dimensions from static detection
     baseWidth = svgWidth;
@@ -652,16 +710,32 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
     <div className="flex flex-col h-full bg-[#1E2431] border-r border-border overflow-hidden">
       {/* Toolbar */}
       <div className="flex items-center justify-between px-4 py-2 bg-[#1E2431] border-b border-border z-10">
-        <span className="text-xs font-medium text-muted-foreground truncate max-w-[200px]" title={fileName || 'Untitled'}>
+        <span
+          className="text-xs font-medium text-muted-foreground truncate max-w-[200px]"
+          title={fileName || 'Untitled'}
+        >
           {fileName || 'Untitled'}
         </span>
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomOut} title="Zoom Out" disabled={!isSvgWithDimensions}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+            disabled={!isSvgWithDimensions}
+          >
             <ZoomOut className="h-3 w-3" />
           </Button>
-          <Select value={isFitMode ? 'fit' : effectiveScale.toString()} onValueChange={handleScaleChange} disabled={!isSvgWithDimensions}>
+          <Select
+            value={isFitMode ? 'fit' : effectiveScale.toString()}
+            onValueChange={handleScaleChange}
+            disabled={!isSvgWithDimensions}
+          >
             <SelectTrigger className="h-6 w-[80px] text-xs border-none bg-transparent hover:bg-primary/10 hover:text-primary focus:ring-0 transition-colors justify-center">
-              <span>{isSvgWithDimensions ? (isFitMode ? 'Fit' : `${displayPercentage}%`) : '100%'}</span>
+              <span>
+                {isSvgWithDimensions ? (isFitMode ? 'Fit' : `${displayPercentage}%`) : '100%'}
+              </span>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="fit">Fit to View</SelectItem>
@@ -675,10 +749,24 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
               <SelectItem value="3">300%</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={handleZoomIn} title="Zoom In" disabled={!isSvgWithDimensions}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={handleZoomIn}
+            title="Zoom In"
+            disabled={!isSvgWithDimensions}
+          >
             <ZoomIn className="h-3 w-3" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={handleResetZoom} title="Reset Zoom" disabled={!isSvgWithDimensions}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 ml-1"
+            onClick={handleResetZoom}
+            title="Reset Zoom"
+            disabled={!isSvgWithDimensions}
+          >
             <RotateCcw className="h-3 w-3" />
           </Button>
         </div>
@@ -732,7 +820,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                 backgroundColor: 'transparent',
                 margin: 0,
                 padding: 0,
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
               }}
             />
           </div>
@@ -764,7 +852,7 @@ export const PreviewPane: React.FC<PreviewPaneProps> = ({ htmlContent, fileName,
                 backgroundColor: 'transparent',
                 margin: 0,
                 padding: 0,
-                pointerEvents: 'auto'
+                pointerEvents: 'auto',
               }}
             />
           </div>

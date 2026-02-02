@@ -5,7 +5,7 @@ import { useAppStore } from '../store/useAppStore';
 
 /**
  * Hook to enable Quick Copy feature in Monaco Editor
- * 
+ *
  * When enabled:
  * - Hovering over a line in the Pug editor detects the indentation level
  * - Selects the current line and all child lines (lines with greater indentation)
@@ -31,7 +31,7 @@ export const useQuickCopy = (
   const preventHoverRef = useRef(false);
   const lockSelectionRef = useRef(false);
   const lockedSelectionRef = useRef<monaco.Selection | null>(null);
-  
+
   // Update editor ref when it changes
   useEffect(() => {
     editorRef.current = editor;
@@ -39,7 +39,7 @@ export const useQuickCopy = (
 
   useEffect(() => {
     const currentEditor = editorRef.current;
-    
+
     if (!currentEditor || !monacoInstance || !enableQuickCopy) {
       // Clean up listeners if Quick Copy is disabled
       if (hoverDisposableRef.current) {
@@ -73,7 +73,7 @@ export const useQuickCopy = (
         if (multiSelectionsRef.current.length > 0) {
           const allSelections = multiSelectionsRef.current.map((item) => item.selection);
           const currentSelections = currentEditor.getSelections();
-          
+
           // Check if current selections differ from what we want
           if (currentSelections && !areSelectionsEqual(currentSelections, allSelections)) {
             currentEditor.setSelections(allSelections);
@@ -93,10 +93,12 @@ export const useQuickCopy = (
       if (sel1.length !== sel2.length) return false;
       return sel1.every((s1, i) => {
         const s2 = sel2[i];
-        return s1.startLineNumber === s2.startLineNumber &&
-               s1.endLineNumber === s2.endLineNumber &&
-               s1.startColumn === s2.startColumn &&
-               s1.endColumn === s2.endColumn;
+        return (
+          s1.startLineNumber === s2.startLineNumber &&
+          s1.endLineNumber === s2.endLineNumber &&
+          s1.startColumn === s2.startColumn &&
+          s1.endColumn === s2.endColumn
+        );
       });
     };
 
@@ -115,7 +117,7 @@ export const useQuickCopy = (
     const getChildLines = (startLine: number): { start: number; end: number } => {
       const lineCount = model.getLineCount();
       const startIndent = getIndentLevel(startLine);
-      
+
       // Check if the line is empty or just whitespace
       const lineContent = model.getLineContent(startLine).trim();
       if (!lineContent) {
@@ -128,7 +130,7 @@ export const useQuickCopy = (
       for (let i = startLine + 1; i <= lineCount; i++) {
         const lineContent = model.getLineContent(i).trim();
         const lineIndent = getIndentLevel(i);
-        
+
         // If we hit a non-empty line with equal or less indentation, we've found the end
         if (lineContent && lineIndent <= startIndent) {
           break;
@@ -158,7 +160,7 @@ export const useQuickCopy = (
      */
     const selectLineWithChildren = (lineNumber: number) => {
       const { start, end } = getChildLines(lineNumber);
-      
+
       const startColumn = 1;
       const endLineContent = model.getLineContent(end);
       const endColumn = endLineContent.length + 1;
@@ -166,7 +168,7 @@ export const useQuickCopy = (
       const selection = new monacoInstance!.Selection(start, startColumn, end, endColumn);
       currentEditor.setSelection(selection);
       currentSelectionRef.current = selection;
-      
+
       return selection;
     };
 
@@ -176,9 +178,9 @@ export const useQuickCopy = (
       if (preventHoverRef.current) {
         return;
       }
-      
+
       const position = e.target.position;
-      
+
       if (!position) {
         isHoveringRef.current = false;
         if (messageTimeoutRef.current) {
@@ -199,33 +201,37 @@ export const useQuickCopy = (
 
       isHoveringRef.current = true;
       const lineNumber = position.lineNumber;
-      
+
       // Clear any pending timeout
       if (messageTimeoutRef.current) {
         clearTimeout(messageTimeoutRef.current);
         messageTimeoutRef.current = null;
       }
-      
+
       // Only update selection if we're hovering over a different line
       if (lineNumber !== lastHoverLineRef.current) {
         lastHoverLineRef.current = lineNumber;
         const newSelection = selectLineWithChildren(lineNumber);
-        
+
         // Show hover message (stays while hovering)
         const blockName = getBlockName(lineNumber);
         const { start, end } = getChildLines(lineNumber);
         const lineCount = end - start + 1;
-        
+
         if (multiSelectionsRef.current.length > 0) {
-          useAppStore.setState({ statusMessage: `Click to add ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})` });
+          useAppStore.setState({
+            statusMessage: `Click to add ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
+          });
           // Always show all previous selections plus the current hover
           const allSelections = [
             ...multiSelectionsRef.current.map((item) => item.selection),
-            newSelection
+            newSelection,
           ];
           currentEditor.setSelections(allSelections);
         } else {
-          useAppStore.setState({ statusMessage: `Click to copy ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})` });
+          useAppStore.setState({
+            statusMessage: `Click to copy ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
+          });
           // For single selection mode, just set the current selection
           currentEditor.setSelection(newSelection);
         }
@@ -260,7 +266,6 @@ export const useQuickCopy = (
         lockSelectionRef.current = false;
         lockedSelectionRef.current = null;
       }, 1000);
-
 
       // Get the selected text from the stored selection
       const selectedText = model.getValueInRange(selection);
@@ -297,7 +302,7 @@ export const useQuickCopy = (
             lockedSelectionRef.current = null;
           }, 500);
         }
-        
+
         // Immediately copy all selections
         if (multiSelectionsRef.current.length > 0) {
           // Sort selections by line number to maintain document order
@@ -308,33 +313,36 @@ export const useQuickCopy = (
           // Combine all selected texts
           const combinedTexts = sortedSelections.map((item) => item.text);
           const textToCopy = combinedTexts.join('\n');
-          
+
           // Normalize indentation
           const lines = textToCopy.split('\n');
           if (lines.length > 0) {
             // Get the indentation of the first line (parent)
             const firstLineIndent = lines[0].match(/^(\s*)/)?.[1] || '';
             const indentLength = firstLineIndent.length;
-            
+
             // Remove that amount of indentation from all lines
-            const normalizedLines = lines.map(line => {
+            const normalizedLines = lines.map((line) => {
               if (line.startsWith(firstLineIndent)) {
                 return line.substring(indentLength);
               }
               return line;
             });
-            
+
             const normalizedText = normalizedLines.join('\n');
-            
+
             // Copy to clipboard
-            navigator.clipboard.writeText(normalizedText)
+            navigator.clipboard
+              .writeText(normalizedText)
               .then(() => {
                 const selectionCount = multiSelectionsRef.current.length;
                 const totalLines = normalizedLines.length;
-                useAppStore.getState().setStatusMessage(
-                  `Copied ${selectionCount} selection${selectionCount !== 1 ? 's' : ''} (${totalLines} line${totalLines !== 1 ? 's' : ''})`,
-                  15000
-                );
+                useAppStore
+                  .getState()
+                  .setStatusMessage(
+                    `Copied ${selectionCount} selection${selectionCount !== 1 ? 's' : ''} (${totalLines} line${totalLines !== 1 ? 's' : ''})`,
+                    15000
+                  );
                 onCopy?.();
               })
               .catch(() => {
@@ -342,7 +350,7 @@ export const useQuickCopy = (
               });
           }
         }
-        
+
         return;
       } else {
         // Normal click without Shift: copy current selection and clear multi-selections
@@ -358,28 +366,31 @@ export const useQuickCopy = (
             // Get the indentation of the first line (parent)
             const firstLineIndent = lines[0].match(/^(\s*)/)?.[1] || '';
             const indentLength = firstLineIndent.length;
-            
+
             // Remove that amount of indentation from all lines
-            const normalizedLines = lines.map(line => {
+            const normalizedLines = lines.map((line) => {
               // Only remove indentation if the line has at least that much
               if (line.startsWith(firstLineIndent)) {
                 return line.substring(indentLength);
               }
               return line;
             });
-            
+
             const normalizedText = normalizedLines.join('\n');
-            
+
             // Copy to clipboard
-            navigator.clipboard.writeText(normalizedText)
+            navigator.clipboard
+              .writeText(normalizedText)
               .then(() => {
                 const blockName = getBlockName(selection.startLineNumber);
                 const lineCount = normalizedLines.length;
-                useAppStore.getState().setStatusMessage(
-                  `Copied ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
-                  15000
-                );
-                
+                useAppStore
+                  .getState()
+                  .setStatusMessage(
+                    `Copied ${blockName} (${lineCount} line${lineCount !== 1 ? 's' : ''})`,
+                    15000
+                  );
+
                 // Restore selection after copy
                 currentEditor.setSelection(selection);
                 onCopy?.();
@@ -390,7 +401,7 @@ export const useQuickCopy = (
           }
         }
       }
-      
+
       // Restore selection after all processing
       currentEditor.setSelection(selection);
     });

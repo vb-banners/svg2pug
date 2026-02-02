@@ -1,6 +1,6 @@
 {
   "name": "SVG2PUG",
-  "version": "0.4.15",
+  "version": "0.4.16",
   "private": true,
   "homepage": ".",
   "dependencies": {
@@ -39,13 +39,19 @@
     "build": "node scripts/build-to-docs.js",
     "react-build": "node scripts/build-to-docs.js",
     "test": "react-scripts test --env=jsdom",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\"",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.1.5",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.1",
     "@types/he": "^1.2.3",
+    "@types/jest": "^30.0.0",
     "@types/js-beautify": "^1.14.3",
     "@types/node": "^20.10.5",
     "@types/pako": "^2.0.4",
@@ -53,11 +59,27 @@
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "browserify": "^17.0.1",
+    "eslint-config-prettier": "^10.1.8",
     "postcss": "^8.4.47",
+    "prettier": "^3.8.1",
     "pug": "^3.0.3",
     "react-scripts": "5.0.1",
     "tailwindcss": "^3.4.14",
     "typescript": "^4.9.5"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/vendor/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 50,
+        "functions": 50,
+        "lines": 50
+      }
+    }
   },
   "browserslist": {
     "production": [
