@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.4.17] - 2026-02-02
+
+### Changed
+- **SVG Attribute Ordering**: Improved attribute order consistency in SVG output
+  - `fill-opacity` now always appears immediately after `fill` attribute
+  - `d` attribute (path data) now always appears last
+  - Applied to both HTML→PUG and PUG→HTML conversion directions
+
 ## [0.4.16] - 2026-02-02
 
 ### Added
