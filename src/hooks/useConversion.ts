@@ -384,6 +384,28 @@ export const useConversion = () => {
     });
   }, []);
 
+  const moveDAttributeToEnd = useCallback((html: string): string => {
+    if (!html || typeof html !== 'string') return html;
+
+    return html.replace(
+      /<([a-zA-Z][a-zA-Z0-9]*)\s+([^>]*?)\s*(\/?)\s*>/g,
+      (match, tagName, attrs, selfClose) => {
+        const dMatch = attrs.match(/\bd=(["'][^"']*["'])/);
+        if (!dMatch) return match;
+
+        // Remove d attribute from its current position
+        const attrsWithoutD = attrs.replace(/\s*\bd=(["'][^"']*["'])/, '').trim();
+
+        // Reconstruct tag with d at the end
+        const dAttr = `d=${dMatch[1]}`;
+        const closingSlash = selfClose ? '/' : '';
+        return `<${tagName} ${attrsWithoutD} ${dAttr}${closingSlash}>`
+          .replace(/\s+>/g, '>')
+          .replace(/\s+\/>/g, '/>');
+      }
+    );
+  }, []);
+
   const findHTMLOrBodyTag = useCallback((html: string): boolean => {
     return html.search(/<\/html>|<\/body>/) > -1;
   }, []);
@@ -417,7 +439,8 @@ export const useConversion = () => {
         ? await applySvgoOptimizations(processedHtml, options.svgoSettings)
         : processedHtml;
 
-      const reorderedHtml = reorderFillOpacity(optimizedHtml);
+      let reorderedHtml = reorderFillOpacity(optimizedHtml);
+      reorderedHtml = moveDAttributeToEnd(reorderedHtml);
 
       const isBodyless = !findHTMLOrBodyTag(reorderedHtml);
       const convertOptions = {
@@ -471,6 +494,8 @@ export const useConversion = () => {
     [
       applySvgoOptimizations,
       removeMatchingRects,
+      reorderFillOpacity,
+      moveDAttributeToEnd,
       applySvgIdToClassTransform,
       applyCommonClassesTransform,
       applyPugSizeVarsTransform,
@@ -527,12 +552,15 @@ export const useConversion = () => {
           indent_size: options.tabSize,
           indent_with_tabs: !options.useSoftTabs,
         });
+        // Ensure fill-opacity comes after fill attribute and d attribute is last
+        sanitizeHTMLCode = reorderFillOpacity(sanitizeHTMLCode);
+        sanitizeHTMLCode = moveDAttributeToEnd(sanitizeHTMLCode);
         return sanitizeHTMLCode;
       } catch (error) {
         return '';
       }
     },
-    []
+    [reorderFillOpacity, moveDAttributeToEnd]
   );
 
   return {
