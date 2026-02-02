@@ -12,7 +12,12 @@ SVG2PUG is a React/TypeScript web app that converts SVG/HTML to PUG (formerly Ja
 npm start          # Start dev server at localhost:3000
 npm run build      # Production build to docs/ (for GitHub Pages)
 npm test           # Run tests with Jest
+npm run deploy     # Build + commit docs/
 ```
+
+## Deployment Workflow
+
+**IMPORTANT**: Before pushing to remote, ALWAYS run `npm run build` first to update the `docs/` folder, then commit the docs changes, then push. The site deploys from `docs/` via GitHub Pages.
 
 ## Architecture
 
